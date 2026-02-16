@@ -213,7 +213,9 @@ const SERVICES=[
 {id:"newpipe",name:"NewPipe",icon:"\uD83D\uDCFA",priv:5,cost:"Free",ease:4,plat:"Android (F-Droid)",desc:"Lightweight YouTube frontend. No Google account needed. Background play, downloads.",imp:"Export YouTube subscriptions via Takeout \u2192 Import OPML into NewPipe",url:"https://newpipe.net"},
 {id:"freetube",name:"FreeTube",icon:"\uD83D\uDCFA",priv:5,cost:"Free",ease:4,plat:"Windows, Mac, Linux",desc:"Desktop YouTube client. No tracking, no ads. Import subscriptions.",imp:"Settings \u2192 Data Settings \u2192 Import Subscriptions from YouTube/OPML",url:"https://freetubeapp.io"},
 {id:"invidious",name:"Invidious",icon:"\uD83D\uDD35",priv:5,cost:"Free",ease:3,plat:"Web (self-hosted / public instances)",desc:"Alternative YouTube frontend. No JavaScript required, no tracking.",imp:"Import subscriptions via OPML file from YouTube Takeout data",url:"https://invidious.io"},
-{id:"odysee",name:"Odysee / LBRY",icon:"\uD83D\uDFE3",priv:4,cost:"Free",ease:4,plat:"Web, iOS, Android, Desktop",desc:"Decentralized video platform. Blockchain-backed. Growing creator base.",imp:"YouTube Sync feature can auto-mirror your channel to Odysee",url:"https://odysee.com"}]},
+{id:"odysee",name:"Odysee / LBRY",icon:"\uD83D\uDFE3",priv:4,cost:"Free",ease:4,plat:"Web, iOS, Android, Desktop",desc:"Decentralized video platform. Blockchain-backed. Growing creator base.",imp:"YouTube Sync feature can auto-mirror your channel to Odysee",url:"https://odysee.com"},
+{id:"rumble",name:"Rumble",icon:"\uD83D\uDFE2",priv:3,cost:"Free",ease:5,plat:"Web, iOS, Android",desc:"Free speech video platform. Growing creator ecosystem with monetization options.",imp:"Create account and manually re-upload or subscribe to migrated creators",url:"https://rumble.com"},
+{id:"kick",name:"Kick",icon:"\uD83D\uDFE2",priv:3,cost:"Free",ease:5,plat:"Web, iOS, Android",desc:"Live streaming and video platform. Creator-friendly revenue split. Growing community.",imp:"Create account and follow your preferred creators on the platform",url:"https://kick.com"}]},
 {id:"gdocs",name:"Docs/Sheets/Slides",icon:"\uD83D\uDCDD",cat:"Productivity",diff:"Medium",alts:[
 {id:"libreoffice",name:"LibreOffice",icon:"\uD83D\uDCC4",priv:5,cost:"Free",ease:5,plat:"Windows, Mac, Linux",desc:"Full open-source office suite. Excellent MS Office compatibility.",imp:"Google Takeout exports Docs as .docx, Sheets as .xlsx \u2014 open directly",url:"https://www.libreoffice.org/download/"},
 {id:"cryptpad",name:"CryptPad",icon:"\uD83D\uDD10",priv:5,cost:"Free / \u20AC5+/mo",ease:4,plat:"Web",desc:"Zero-knowledge encrypted collaborative suite. Docs, sheets, presentations.",imp:"Upload exported files to CryptPad Drive.",url:"https://cryptpad.fr"},
@@ -455,7 +457,7 @@ function mkTracker(){
       h+='<span class="tdts">';
       const lb=tLb(sv.type);st.forEach(s=>{const d=sv.steps&&sv.steps[s];h+='<span class="tdt'+(d?' dn':'')+'" title="'+(lb[s]||s)+'">'+(d?'\u2713':'')+'</span>'});
       h+='</span>';
-      if(sv.domain){const u=sv.domain.startsWith('http')?sv.domain:'https://'+sv.domain;h+='<span class="tlks"><a href="'+esc(u)+'" target="_blank" class="tlk">'+esc(sv.domain)+'</a>';if(sv.type==='oauth')h+='<a href="'+esc(u)+'/forgot-password" target="_blank" class="tlk tlkw">Reset PW</a>';h+='</span>'}
+      if(sv.domain){const u=sv.domain.startsWith('http')?sv.domain:'https://'+sv.domain;h+='<span class="tlks"><a href="'+esc(u)+'" target="_blank" class="tlk">'+esc(sv.domain)+'</a>';if(sv.type==='oauth')h+='<a href="'+esc(u)+'/login" target="_blank" class="tlk tlkw">Login</a>';h+='</span>'}
       h+='</div>';
     });
   }

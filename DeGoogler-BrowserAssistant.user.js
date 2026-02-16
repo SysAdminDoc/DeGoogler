@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         DeGoogler Browser Assistant
 // @namespace    https://github.com/SysAdminDoc
-// @version      0.0.4
+// @version      0.0.5
 // @description  Automates Google Takeout selection, exports YouTube subscriptions, audits connected apps/OAuth services, tracks migration of every account tied to your Google login, and assists with Gmail forwarding setup during the degoogling process.
 // @author       SysAdminDoc
 // @match        https://takeout.google.com/*
 // @match        https://myaccount.google.com/*
 // @match        https://mail.google.com/*
 // @match        https://www.youtube.com/*
+// @match        https://sysadmindoc.github.io/DeGoogler/*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_addStyle
@@ -1311,7 +1312,6 @@
                 const allDone = steps.every(st => svc.steps[st.key]);
                 const domain = svc.domain || getDomain(svc.name);
                 const loginUrl = getLoginUrl(domain);
-                const resetUrl = getResetUrl(domain);
 
                 const card = document.createElement('div');
                 card.className = 'dg-app-card';
@@ -1335,8 +1335,8 @@
                     if (domain) {
                         cardHTML += '<a href="' + (loginUrl || '#') + '" target="_blank" rel="noopener" style="font-size:9px;color:' + CFG.accentColor + ';text-decoration:none;padding:2px 6px;border:1px solid ' + CFG.border + ';border-radius:3px">' + domain + '</a>';
                     }
-                    if (resetUrl && svc.type === 'oauth') {
-                        cardHTML += '<a href="' + resetUrl + '" target="_blank" rel="noopener" style="font-size:9px;color:' + CFG.orange + ';text-decoration:none;padding:2px 6px;border:1px solid ' + CFG.border + ';border-radius:3px">Reset Password</a>';
+                    if (loginUrl && svc.type === 'oauth') {
+                        cardHTML += '<a href="' + loginUrl + '" target="_blank" rel="noopener" style="font-size:9px;color:' + CFG.orange + ';text-decoration:none;padding:2px 6px;border:1px solid ' + CFG.border + ';border-radius:3px">Login</a>';
                     }
                     if (svc.detailUrl) {
                         cardHTML += '<a href="' + svc.detailUrl + '" target="_blank" rel="noopener" style="font-size:9px;color:' + CFG.textMuted + ';text-decoration:none;padding:2px 6px;border:1px solid ' + CFG.border + ';border-radius:3px">Google Details</a>';
@@ -1451,16 +1451,16 @@
             const services = loadServices();
             if (services.length === 0) { showToast('No services to export'); return; }
 
-            let csv = 'Service Name,Auth Type,Priority,Status,Domain,Reset URL,Google Detail URL,Set Password,Update Email,Review Access,Revoke Google,Verified\n';
+            let csv = 'Service Name,Auth Type,Priority,Status,Domain,Login URL,Google Detail URL,Set Password,Update Email,Review Access,Revoke Google,Verified\n';
             services.forEach(svc => {
                 const steps = getSteps(svc.type);
                 const done = steps.filter(st => svc.steps[st.key]).length;
                 const status = done === steps.length ? 'Complete' : done > 0 ? 'In Progress' : 'Not Started';
                 const safeName = svc.name.replace(/"/g, '""');
                 const domain = svc.domain || getDomain(svc.name) || '';
-                const resetUrl = svc.type === 'oauth' ? (getResetUrl(domain) || '') : '';
+                const loginUrl = svc.type === 'oauth' ? (getLoginUrl(domain) || '') : '';
                 csv += '"' + safeName + '",' + svc.type + ',' + svc.priority + ',' + status + ',';
-                csv += '"' + domain + '","' + resetUrl + '","' + (svc.detailUrl || '') + '",';
+                csv += '"' + domain + '","' + loginUrl + '","' + (svc.detailUrl || '') + '",';
                 csv += (svc.steps.password ? 'Yes' : '-') + ',';
                 csv += (svc.steps.email ? 'Yes' : 'No') + ',';
                 csv += (svc.steps.review ? 'Yes' : '-') + ',';
@@ -1480,6 +1480,36 @@
 
         // Initial render
         renderList();
+    }
+
+    // ═══════════════════════════════════════════════
+    // MODULE: GitHub Pages Sync Bridge
+    // ═══════════════════════════════════════════════
+    function initPageSync() {
+        // Send tracked services to the landing page via postMessage
+        const STORE_KEY = 'dg-connected-services';
+        let data = [];
+        try { data = JSON.parse(GM_getValue(STORE_KEY, '[]')); }
+        catch { data = []; }
+
+        if (data.length > 0) {
+            // postMessage to the page
+            window.postMessage({ type: 'degoogler-sync', services: data }, '*');
+
+            // Also inject as hidden element for fallback
+            const el = document.createElement('div');
+            el.id = 'degoogler-userscript-data';
+            el.style.display = 'none';
+            el.textContent = JSON.stringify(data);
+            document.body.appendChild(el);
+        }
+
+        // Listen for requests from the page
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'degoogler-request-sync') {
+                window.postMessage({ type: 'degoogler-sync', services: data }, '*');
+            }
+        });
     }
 
     // ── Route to correct module ──
@@ -1508,6 +1538,8 @@
             initGmailHelper();
         } else if (host === 'www.youtube.com') {
             initYouTubeExporter();
+        } else if (host === 'sysadmindoc.github.io') {
+            initPageSync();
         }
     }
 
