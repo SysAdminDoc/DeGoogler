@@ -4,684 +4,529 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DeGoogler — Take Back Your Digital Life</title>
-<meta name="description" content="Step-by-step guide to migrating away from Google. Open-source toolkit with automated data export, service detection, and migration tracking.">
+<meta name="description" content="Step-by-step toolkit for migrating away from Google services. Open-source, no tracking.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#050508;--bg2:#0a0a10;--bg3:#0e0e16;--bg4:#13131e;
-  --border:#1a1a2e;--border2:#252542;
-  --text:#e8e8f0;--muted:#7878a0;--dim:#484868;
-  --accent:#3b82f6;--accent2:#60a5fa;--accent-bg:rgba(59,130,246,.06);--accent-border:rgba(59,130,246,.15);
-  --green:#22c55e;--green-bg:rgba(34,197,94,.08);--green-border:rgba(34,197,94,.2);
-  --orange:#f59e0b;--orange-bg:rgba(245,158,11,.08);
-  --red:#ef4444;--red-bg:rgba(239,68,68,.08);
-  --purple:#a855f7;
-  --mono:'JetBrains Mono',monospace;--display:'Outfit',sans-serif;
-  --sidebar:260px;
+--bg:#050508;--bg2:#0a0a10;--bg3:#0e0e16;--bg4:#13131e;
+--brd:#1a1a2e;--brd2:#252542;
+--txt:#e8e8f0;--mut:#7878a0;--dim:#484868;
+--acc:#3b82f6;--acc2:#60a5fa;--abg:rgba(59,130,246,.06);--abd:rgba(59,130,246,.15);
+--grn:#22c55e;--gbg:rgba(34,197,94,.08);--gbd:rgba(34,197,94,.2);
+--org:#f59e0b;--obg:rgba(245,158,11,.08);
+--red:#ef4444;--rbg:rgba(239,68,68,.08);
+--pur:#a855f7;--pbg:rgba(168,85,247,.1);
+--mono:'JetBrains Mono',monospace;--disp:'Outfit',sans-serif;
+--sw:260px;
 }
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:var(--mono);line-height:1.6;overflow-x:hidden}
-::selection{background:var(--accent);color:#fff}
-::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+body{background:var(--bg);color:var(--txt);font-family:var(--mono);line-height:1.6;overflow-x:hidden}
+::selection{background:var(--acc);color:#fff}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--brd);border-radius:3px}
+a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 
-.layout{display:flex;min-height:100vh}
-
-/* ── Sidebar ── */
-.sidebar{
-  width:var(--sidebar);position:fixed;top:0;left:0;height:100vh;
-  background:var(--bg2);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;z-index:100;transition:transform .3s ease;
-}
-.sidebar-brand{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-.brand-icon{
-  width:32px;height:32px;border-radius:8px;background:var(--accent);
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:800;color:#fff;font-family:var(--display);
-}
-.brand-text{font-family:var(--display);font-weight:800;font-size:16px;letter-spacing:-.5px}
-.brand-ver{font-size:9px;color:var(--dim);margin-top:1px}
-.sidebar-progress{padding:16px 20px;border-bottom:1px solid var(--border)}
-.pbar-wrap{height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:8px}
-.pbar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:2px;transition:width .5s ease;width:0%}
-.pbar-text{font-size:10px;color:var(--muted);display:flex;justify-content:space-between}
-.sidebar-nav{flex:1;overflow-y:auto;padding:8px 0}
-.nav-item{
-  display:flex;align-items:center;gap:12px;padding:10px 20px;
-  cursor:pointer;transition:all .15s;position:relative;font-size:12px;color:var(--muted);
-}
-.nav-item:hover{background:var(--bg3);color:var(--text)}
-.nav-item.active{color:var(--accent);background:var(--accent-bg)}
-.nav-item.active::before{
-  content:'';position:absolute;left:0;top:4px;bottom:4px;width:2px;
-  background:var(--accent);border-radius:0 2px 2px 0;
-}
-.nav-item.completed{color:var(--green)}
-.nav-num{
-  width:22px;height:22px;border-radius:6px;border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:700;flex-shrink:0;transition:all .15s;
-}
-.nav-item.active .nav-num{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
-.nav-item.completed .nav-num{border-color:var(--green);background:var(--green-bg);color:var(--green)}
-.nav-label{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sidebar-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px}
-.sidebar-link{font-size:10px;color:var(--dim);text-decoration:none;transition:color .15s}
-.sidebar-link:hover{color:var(--muted)}
-
-.mobile-toggle{
-  display:none;position:fixed;top:12px;left:12px;z-index:200;
-  width:40px;height:40px;border-radius:10px;background:var(--bg2);
-  border:1px solid var(--border);cursor:pointer;
-  align-items:center;justify-content:center;color:var(--muted);font-size:16px;
-}
-
-.main{margin-left:var(--sidebar);flex:1;min-height:100vh}
-.content{max-width:800px;margin:0 auto;padding:40px 32px 80px}
-
-/* ── Step pages ── */
-.step-page{display:none;animation:fadeIn .3s ease}
-.step-page.active{display:block}
+/* Layout */
+.sidebar{width:var(--sw);position:fixed;top:0;left:0;height:100vh;background:var(--bg2);border-right:1px solid var(--brd);display:flex;flex-direction:column;z-index:100;transition:transform .3s}
+.sb-brand{padding:20px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px}
+.sb-ico{width:32px;height:32px;border-radius:8px;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;font-family:var(--disp)}
+.sb-nm{font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:-.5px}
+.sb-ver{font-size:9px;color:var(--dim);margin-top:1px}
+.sb-prog{padding:16px 20px;border-bottom:1px solid var(--brd)}
+.pbar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:8px}
+.pfill{height:100%;background:linear-gradient(90deg,var(--acc),var(--grn));border-radius:2px;transition:width .5s;width:0%}
+.ptxt{font-size:10px;color:var(--mut);display:flex;justify-content:space-between}
+.sb-nav{flex:1;overflow-y:auto;padding:8px 0}
+.ni{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;transition:all .15s;position:relative;font-size:12px;color:var(--mut)}
+.ni:hover{background:var(--bg3);color:var(--txt)}
+.ni.act{color:var(--acc);background:var(--abg)}
+.ni.act::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:2px;background:var(--acc);border-radius:0 2px 2px 0}
+.ni.dn{color:var(--grn)}
+.nn{width:22px;height:22px;border-radius:6px;border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.ni.act .nn{border-color:var(--acc);color:var(--acc);background:var(--abg)}
+.ni.dn .nn{border-color:var(--grn);background:var(--gbg);color:var(--grn)}
+.nl{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-ft{padding:12px 20px;border-top:1px solid var(--brd);display:flex;gap:8px}
+.sb-lk{font-size:10px;color:var(--dim);text-decoration:none}.sb-lk:hover{color:var(--mut);text-decoration:none}
+.mob-tog{display:none;position:fixed;top:12px;left:12px;z-index:200;width:40px;height:40px;border-radius:10px;background:var(--bg2);border:1px solid var(--brd);cursor:pointer;align-items:center;justify-content:center;color:var(--mut);font-size:16px}
+.main{margin-left:var(--sw);flex:1;min-height:100vh}
+.ct{max-width:820px;margin:0 auto;padding:40px 32px 80px}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.step-header{margin-bottom:32px}
-.step-eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:3px;color:var(--accent);font-weight:700;margin-bottom:8px}
-.step-title{font-family:var(--display);font-size:clamp(28px,5vw,36px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;margin-bottom:10px}
-.step-desc{font-size:13px;color:var(--muted);line-height:1.7;max-width:560px}
 
-/* ── Action cards ── */
-.action{background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;transition:border-color .2s}
-.action:hover{border-color:var(--border2)}
-.action-header{padding:16px 20px;display:flex;align-items:flex-start;gap:14px;cursor:pointer}
-.action-check{
-  width:22px;height:22px;border-radius:6px;border:2px solid var(--border2);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  font-size:11px;transition:all .15s;margin-top:1px;cursor:pointer;
-}
-.action-check.done{background:var(--green);border-color:var(--green);color:#fff}
-.action-info{flex:1;min-width:0}
-.action-title{font-size:13px;font-weight:700;line-height:1.4}
-.action.done .action-title{color:var(--muted);text-decoration:line-through}
-.action-sub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
-.action-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px}
-.badge-required{background:var(--red-bg);color:var(--red)}
-.badge-auto{background:var(--green-bg);color:var(--green)}
-.badge-manual{background:var(--orange-bg);color:var(--orange)}
-.action-body{padding:0 20px 16px 56px;display:none}
-.action.expanded .action-body{display:block}
-.action-body p{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6}
-.action-body a{color:var(--accent2);text-decoration:none}
-.action-body a:hover{text-decoration:underline}
+/* Step header */
+.sh{margin-bottom:32px}.sey{font-size:10px;text-transform:uppercase;letter-spacing:3px;color:var(--acc);font-weight:700;margin-bottom:8px}
+.stl{font-family:var(--disp);font-size:clamp(28px,5vw,36px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;margin-bottom:10px}
+.sd{font-size:13px;color:var(--mut);line-height:1.7;max-width:580px}
 
-.code{
-  background:var(--bg);border:1px solid var(--border);border-radius:8px;
-  padding:12px 16px;font-size:11px;color:var(--green);overflow-x:auto;
-  position:relative;margin:8px 0;
-}
-.code .c{color:var(--dim)}
-.code-copy{
-  position:absolute;top:6px;right:6px;background:var(--bg3);
-  border:1px solid var(--border);border-radius:4px;padding:3px 8px;
-  font-size:9px;color:var(--dim);cursor:pointer;font-family:var(--mono);transition:all .15s;
-}
-.code-copy:hover{color:var(--text);border-color:var(--border2)}
+/* Action cards */
+.ac{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;margin-bottom:12px;overflow:hidden;transition:border-color .2s}
+.ac:hover{border-color:var(--brd2)}
+.ah{padding:16px 20px;display:flex;align-items:flex-start;gap:14px;cursor:pointer}
+.ack{width:22px;height:22px;border-radius:6px;border:2px solid var(--brd2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;transition:all .15s;margin-top:1px;cursor:pointer}
+.ack.dn{background:var(--grn);border-color:var(--grn);color:#fff}
+.ainf{flex:1;min-width:0}
+.atl{font-size:13px;font-weight:700;line-height:1.4}
+.ac.dn .atl{color:var(--mut);text-decoration:line-through}
+.asu{font-size:11px;color:var(--mut);margin-top:4px;line-height:1.5}
+.abg{font-size:9px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px}
+.abg-r{background:var(--rbg);color:var(--red)}.abg-a{background:var(--gbg);color:var(--grn)}.abg-m{background:var(--obg);color:var(--org)}
+.abd{padding:0 20px 16px 56px;display:none}
+.ac.exp .abd{display:block}
+.abd p{font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.6}
+.code{background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:12px 16px;font-size:11px;color:var(--grn);overflow-x:auto;position:relative;margin:8px 0}
+.code .cm{color:var(--dim)}
+.ccpy{position:absolute;top:6px;right:6px;background:var(--bg3);border:1px solid var(--brd);border-radius:4px;padding:3px 8px;font-size:9px;color:var(--dim);cursor:pointer;font-family:var(--mono)}
+.ccpy:hover{color:var(--txt);border-color:var(--brd2)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;font-family:var(--mono);font-size:12px;font-weight:600;text-decoration:none;border:1px solid transparent;cursor:pointer;transition:all .2s}
+.bp{background:var(--acc);color:#fff;border-color:var(--acc)}.bp:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(59,130,246,.2);text-decoration:none}
+.bg{background:transparent;color:var(--mut);border-color:var(--brd)}.bg:hover{color:var(--txt);border-color:var(--brd2);text-decoration:none}
+.br{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.snav{display:flex;justify-content:space-between;align-items:center;margin-top:40px;padding-top:24px;border-top:1px solid var(--brd)}
 
-.btn{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:10px 20px;border-radius:8px;font-family:var(--mono);
-  font-size:12px;font-weight:600;text-decoration:none;
-  border:1px solid transparent;cursor:pointer;transition:all .2s;
-}
-.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(59,130,246,.2)}
-.btn-ghost{background:transparent;color:var(--muted);border-color:var(--border)}
-.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
-.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+/* Tracker */
+.tsts{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--brd);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.tsx{background:var(--bg2);padding:16px;text-align:center}
+.tsn{font-family:var(--disp);font-size:22px;font-weight:800}
+.tsl{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.tbar{margin-bottom:20px}.tbar .pbar{height:6px;margin-bottom:6px}
+.ttbs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.ttb{padding:5px 12px;border:1px solid var(--brd);border-radius:6px;background:transparent;color:var(--dim);font-size:10px;font-family:var(--mono);cursor:pointer;transition:all .15s;font-weight:600}
+.ttb:hover{color:var(--mut)}.ttb.act{background:var(--abg);border-color:var(--abd);color:var(--acc)}
+.tls{max-height:600px;overflow-y:auto}
+.tit{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--brd);border-radius:8px;margin-bottom:6px;background:var(--bg2);transition:all .15s;flex-wrap:wrap}
+.tit:hover{border-color:var(--brd2)}.tit.td{opacity:.4}
+.tpr{font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.3px;flex-shrink:0}
+.tpr-c{background:var(--rbg);color:var(--red)}.tpr-i{background:var(--obg);color:var(--org)}.tpr-o{background:rgba(120,120,160,.1);color:var(--dim)}
+.tnm{font-size:12px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tty{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;flex-shrink:0}
+.tty-o{background:var(--pbg);color:var(--pur)}.tty-a{background:var(--obg);color:var(--org)}.tty-e{background:rgba(59,130,246,.1);color:var(--acc)}
+.tdts{display:flex;gap:2px;flex-shrink:0}
+.tdt{width:14px;height:14px;border-radius:3px;border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700}
+.tdt.dn{background:var(--grn);border-color:var(--grn);color:#fff}
+.tlks{display:flex;gap:4px;flex-shrink:0}
+.tlk{font-size:9px;padding:3px 8px;border:1px solid var(--brd);border-radius:4px;color:var(--dim);text-decoration:none;transition:all .15s}
+.tlk:hover{border-color:var(--acc);color:var(--acc);text-decoration:none}
+.tlkw:hover{border-color:var(--org);color:var(--org)}
+.temp{padding:40px 20px;text-align:center;color:var(--dim);font-size:12px}
+.tact{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
 
-.step-nav{display:flex;justify-content:space-between;align-items:center;margin-top:40px;padding-top:24px;border-top:1px solid var(--border)}
+/* Service picker */
+.svc{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.svc:hover{border-color:var(--brd2)}.svc.open{border-color:var(--acc)}
+.svh{padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.svi{font-size:18px;flex-shrink:0;width:28px;text-align:center}
+.svn{font-size:13px;font-weight:700;flex:1;min-width:0}
+.svc-cat{font-size:10px;color:var(--dim);flex-shrink:0}
+.svc-diff{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;flex-shrink:0}
+.d-e{background:var(--gbg);color:var(--grn)}.d-m{background:var(--obg);color:var(--org)}.d-h{background:var(--rbg);color:var(--red)}
+.svch{color:var(--dim);transition:transform .2s;font-size:12px;flex-shrink:0}
+.svc.open .svch{transform:rotate(90deg)}
+.svb{display:none;padding:4px 18px 16px;border-top:1px solid var(--brd)}
+.svc.open .svb{display:block}
+.alt{background:var(--bg3);border:1px solid var(--brd);border-radius:8px;padding:14px;margin-top:10px;transition:border-color .15s}
+.alt:hover{border-color:var(--brd2)}
+.altp{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.altn{font-size:13px;font-weight:700;flex:1}
+.altr{display:flex;gap:10px;font-size:10px;color:var(--mut)}.altr span{display:flex;align-items:center;gap:3px}
+.altd{font-size:11px;color:var(--mut);margin-bottom:6px;line-height:1.5}
+.altm{font-size:10px;color:var(--dim);margin-bottom:4px;line-height:1.5}
+.alti{font-size:10px;color:var(--grn);padding:6px 10px;background:var(--gbg);border-radius:6px;margin:6px 0 8px}
+.dots{display:flex;gap:2px}.dot{width:6px;height:6px;border-radius:50%;background:var(--brd)}.dot.f{background:var(--grn)}
 
-/* ── Tracker ── */
-.tracker-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
-.t-stat{background:var(--bg2);padding:16px;text-align:center}
-.t-stat-num{font-family:var(--display);font-size:22px;font-weight:800}
-.t-stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
-.tracker-bar{margin-bottom:20px}
-.tracker-bar .pbar-wrap{height:6px;margin-bottom:6px}
-.t-tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
-.t-tab{
-  padding:5px 12px;border:1px solid var(--border);border-radius:6px;
-  background:transparent;color:var(--dim);font-size:10px;font-family:var(--mono);
-  cursor:pointer;transition:all .15s;font-weight:600;
-}
-.t-tab:hover{color:var(--muted)}
-.t-tab.active{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
-.t-list{max-height:600px;overflow-y:auto}
-.t-item{
-  display:flex;align-items:center;gap:10px;padding:10px 14px;
-  border:1px solid var(--border);border-radius:8px;margin-bottom:6px;
-  background:var(--bg2);transition:all .15s;flex-wrap:wrap;
-}
-.t-item:hover{border-color:var(--border2)}
-.t-item.t-done{opacity:.4}
-.t-pri{font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.3px;flex-shrink:0}
-.t-pri-critical{background:var(--red-bg);color:var(--red)}
-.t-pri-important{background:var(--orange-bg);color:var(--orange)}
-.t-pri-optional{background:rgba(120,120,160,.1);color:var(--dim)}
-.t-name{font-size:12px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.t-type{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;flex-shrink:0}
-.t-type-oauth{background:rgba(168,85,247,.1);color:var(--purple)}
-.t-type-access{background:var(--orange-bg);color:var(--orange)}
-.t-type-email{background:rgba(59,130,246,.1);color:var(--accent)}
-.t-steps{display:flex;gap:2px;flex-shrink:0}
-.t-dot{
-  width:14px;height:14px;border-radius:3px;border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;
-}
-.t-dot.done{background:var(--green);border-color:var(--green);color:#fff}
-.t-links{display:flex;gap:4px;flex-shrink:0}
-.t-link{
-  font-size:9px;padding:3px 8px;border:1px solid var(--border);border-radius:4px;
-  color:var(--dim);text-decoration:none;transition:all .15s;
-}
-.t-link:hover{border-color:var(--accent);color:var(--accent)}
-.t-link-warn:hover{border-color:var(--orange);color:var(--orange)}
-.t-empty{padding:40px 20px;text-align:center;color:var(--dim);font-size:12px}
-.t-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+/* Welcome */
+.hw{text-align:center;padding:60px 0 40px}
+.hw h1{font-family:var(--disp);font-size:clamp(40px,7vw,64px);font-weight:900;letter-spacing:-3px;line-height:.95;margin-bottom:16px;background:linear-gradient(135deg,var(--txt) 20%,var(--acc) 60%,var(--pur) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hw p{font-size:14px;color:var(--mut);max-width:480px;margin:0 auto 28px;line-height:1.7}
+.hfl{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:32px 0}
+.hfs{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg2);border:1px solid var(--brd);border-radius:8px;font-size:11px;color:var(--mut)}
+.hfn{width:18px;height:18px;border-radius:5px;background:var(--abg);border:1px solid var(--abd);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.hfa{color:var(--dim);font-size:12px}
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;background:var(--grn);color:#fff;border-radius:8px;font-size:12px;font-family:var(--mono);z-index:9999;animation:fadeIn .3s ease;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 
-/* ── Alternatives ── */
-.alt-row{
-  display:flex;align-items:center;gap:12px;padding:12px 16px;
-  border:1px solid var(--border);border-radius:8px;margin-bottom:6px;
-  background:var(--bg2);transition:all .15s;
-}
-.alt-row:hover{border-color:var(--border2)}
-.alt-from{font-size:12px;color:var(--muted);width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.alt-arrow{color:var(--dim);flex-shrink:0}
-.alt-to{font-size:12px;font-weight:700;flex:1;min-width:0}
-.alt-to a{color:var(--text);text-decoration:none}
-.alt-to a:hover{color:var(--accent2)}
-.alt-meta{font-size:10px;color:var(--dim);flex-shrink:0}
-.alt-diff{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;flex-shrink:0}
-.diff-easy{background:var(--green-bg);color:var(--green)}
-.diff-medium{background:var(--orange-bg);color:var(--orange)}
-.diff-hard{background:var(--red-bg);color:var(--red)}
-
-/* ── Welcome ── */
-.hero-welcome{text-align:center;padding:60px 0 40px}
-.hero-welcome h1{
-  font-family:var(--display);font-size:clamp(40px,7vw,64px);font-weight:900;
-  letter-spacing:-3px;line-height:.95;margin-bottom:16px;
-  background:linear-gradient(135deg,var(--text) 20%,var(--accent) 60%,var(--purple) 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.hero-welcome p{font-size:14px;color:var(--muted);max-width:480px;margin:0 auto 28px;line-height:1.7}
-.hero-flow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:32px 0}
-.flow-step{
-  display:flex;align-items:center;gap:8px;padding:8px 14px;
-  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
-  font-size:11px;color:var(--muted);
-}
-.flow-step .flow-num{
-  width:18px;height:18px;border-radius:5px;background:var(--accent-bg);
-  border:1px solid var(--accent-border);color:var(--accent);
-  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;
-}
-.flow-arrow{color:var(--dim);font-size:12px}
-
-.toast{
-  position:fixed;bottom:20px;right:20px;padding:10px 18px;
-  background:var(--green);color:#fff;border-radius:8px;font-size:12px;
-  font-family:var(--mono);z-index:9999;animation:fadeIn .3s ease;
-  box-shadow:0 8px 24px rgba(0,0,0,.3);
-}
+/* Category filter */
+.cflt{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
+.cf{padding:5px 12px;border:1px solid var(--brd);border-radius:6px;background:transparent;color:var(--dim);font-size:10px;font-family:var(--mono);cursor:pointer;transition:all .15s;font-weight:600}
+.cf:hover{color:var(--mut)}.cf.act{background:var(--abg);border-color:var(--abd);color:var(--acc)}
 
 @media(max-width:800px){
-  .sidebar{transform:translateX(-100%)}
-  .sidebar.open{transform:translateX(0)}
-  .mobile-toggle{display:flex}
-  .main{margin-left:0}
-  .content{padding:60px 20px 80px}
-  .tracker-stats{grid-template-columns:repeat(2,1fr)}
-  .hero-flow{flex-direction:column;align-items:center}
-  .flow-arrow{transform:rotate(90deg)}
-  .alt-from{width:80px}
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
+  .mob-tog{display:flex}.main{margin-left:0}.ct{padding:60px 20px 80px}
+  .tsts{grid-template-columns:repeat(2,1fr)}.hfl{flex-direction:column;align-items:center}.hfa{transform:rotate(90deg)}
 }
 </style>
 </head>
 <body>
-
-<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
-
+<button class="mob-tog" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
 <aside class="sidebar">
-  <div class="sidebar-brand">
-    <div class="brand-icon">DG</div>
-    <div>
-      <div class="brand-text">DeGoogler</div>
-      <div class="brand-ver">v0.0.5 &middot; Open Source</div>
-    </div>
-  </div>
-  <div class="sidebar-progress">
-    <div class="pbar-wrap"><div class="pbar-fill" id="global-progress"></div></div>
-    <div class="pbar-text"><span id="global-pct">0%</span><span id="global-count">0 / 0</span></div>
-  </div>
-  <nav class="sidebar-nav" id="sidebar-nav"></nav>
-  <div class="sidebar-footer">
-    <a href="https://github.com/SysAdminDoc/DeGoogler" target="_blank" class="sidebar-link">GitHub</a>
-    <a href="https://github.com/SysAdminDoc/DeGoogler/issues" target="_blank" class="sidebar-link">Issues</a>
-    <a href="https://github.com/SysAdminDoc/DeGoogler/blob/main/LICENSE" target="_blank" class="sidebar-link">MIT License</a>
-  </div>
+<div class="sb-brand"><div class="sb-ico">DG</div><div><div class="sb-nm">DeGoogler</div><div class="sb-ver">v0.0.5</div></div></div>
+<div class="sb-prog"><div class="pbar"><div class="pfill" id="gp"></div></div><div class="ptxt"><span id="gpct">0%</span><span id="gcnt">0/0</span></div></div>
+<nav class="sb-nav" id="sn"></nav>
+<div class="sb-ft">
+<a href="https://github.com/SysAdminDoc/DeGoogler" target="_blank" class="sb-lk">GitHub</a>
+<a href="https://github.com/SysAdminDoc/DeGoogler/issues" target="_blank" class="sb-lk">Issues</a>
+<a href="https://github.com/SysAdminDoc/DeGoogler/blob/main/LICENSE" target="_blank" class="sb-lk">MIT</a>
+</div>
 </aside>
-
-<div class="main"><div class="content" id="content"></div></div>
-
+<div class="main"><div class="ct" id="ct"></div></div>
 <script>
-// ═══════════════════════════════════════════
-// DeGoogler Guided Wizard
-// ═══════════════════════════════════════════
+// ══════════════════════════════════════════════
+// DeGoogler v0.0.5 — Unified Migration Wizard
+// ══════════════════════════════════════════════
 
-const STEPS = [
-  {
-    id:'welcome', label:'Welcome', num:'~',
-    title:'Take Back Your Digital Life',
-    eyebrow:'DeGoogler',
-    desc:'A complete open-source toolkit for leaving Google behind. This guide walks you through every step \u2014 from installing the tools to deleting your account.',
-    type:'welcome'
-  },
-  {
-    id:'install', label:'Install Tools', num:'1',
-    title:'Install the Toolkit',
-    eyebrow:'Step 1 of 7',
-    desc:'Two tools to install. The Browser Assistant automates tasks on Google pages. The PowerShell Toolkit processes your exported data on Windows.',
-    actions:[
-      { id:'install_tampermonkey', title:'Install Tampermonkey browser extension', sub:'Required for the Browser Assistant userscript to run.', badge:'required',
-        body:'<p>Tampermonkey lets you run userscripts in your browser. Install from your browser\'s extension store:</p><div class="btn-row"><a href="https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo" target="_blank" class="btn btn-ghost">Chrome</a><a href="https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/" target="_blank" class="btn btn-ghost">Firefox</a><a href="https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd" target="_blank" class="btn btn-ghost">Edge</a></div>' },
-      { id:'install_userscript', title:'Install DeGoogler Browser Assistant userscript', sub:'Click the button below \u2014 Tampermonkey will prompt you to install.', badge:'required',
-        body:'<p>Activates automatically on Google Takeout, YouTube, Gmail, and your Google Account pages. Also syncs your migration data back to this page.</p><div class="btn-row"><a href="https://github.com/SysAdminDoc/DeGoogler/raw/refs/heads/main/DeGoogler-BrowserAssistant.user.js" class="btn btn-primary">Install Userscript</a></div>' },
-      { id:'install_powershell', title:'Download the PowerShell Toolkit (Windows)', sub:'Desktop app for processing exported data. You\'ll use it in Step 4.', badge:'manual',
-        body:'<p>Download the script or run the one-liner in an elevated PowerShell window:</p><div class="code"><button class="code-copy" onclick="copyText(\'irm https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/refs/heads/main/DeGoogler-Toolkit.ps1 | iex\')">Copy</button><span class="c"># Run in PowerShell as Administrator</span><br>irm https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/refs/heads/main/DeGoogler-Toolkit.ps1 | iex</div><div class="btn-row"><a href="https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/refs/heads/main/DeGoogler-Toolkit.ps1" download class="btn btn-ghost">Download .ps1 File</a></div>' }
-    ]
-  },
-  {
-    id:'scan', label:'Scan Connections', num:'2',
-    title:'Find Everything Tied to Google',
-    eyebrow:'Step 2 of 7',
-    desc:'This is the step most guides skip \u2014 and why people can\'t fully leave Google. Every "Sign in with Google" login and every service registered with your Gmail must be migrated first.',
-    actions:[
-      { id:'scan_visit', title:'Open your Google Third-Party Connections page', sub:'The Browser Assistant panel will appear on the right side of the page.', badge:'required',
-        body:'<p>This page lists every app connected to your Google account \u2014 both "Sign in with Google" logins and apps with data access permissions.</p><div class="btn-row"><a href="https://myaccount.google.com/connections?hl=en" target="_blank" class="btn btn-primary">Open Google Connections</a></div>' },
-      { id:'scan_signin', title:'Click "Scan Sign-In Apps" in the DeGoogler panel', sub:'Auto-detects every service where "Sign in with Google" is your login method.', badge:'auto',
-        body:'<p>The scanner reads Google\'s "Sign in with Google" tab and captures each service name, icon, and detail URL. All found services get auto-classified by priority (Critical / Important / Optional) and added to your tracker.</p>' },
-      { id:'scan_access', title:'Click "Scan Access Apps" in the DeGoogler panel', sub:'Detects apps with access to your Google data (Drive, Calendar, Contacts, etc).', badge:'auto',
-        body:'<p>These are apps you granted permission to read/write Google data. They need access revoked but may not need a password migration.</p>' },
-      { id:'scan_manual', title:'Manually add email-registered accounts', sub:'The scanner only finds OAuth apps. Also think through: banking, insurance, government, medical, employer, shopping.', badge:'manual',
-        body:'<p>The DeGoogler panel has a quick-add grid of 24 commonly forgotten services plus a manual entry form with auto-priority detection.</p><p><strong>Categories to think through:</strong> Banking &amp; credit cards, government (IRS, SSA, DMV), health insurance &amp; patient portals, employer HR &amp; payroll, domain registrars, cloud hosting, subscriptions, utilities, social media, shopping (Amazon, eBay).</p>' },
-      { id:'scan_return', title:'Return to this page to see your synced tracker', sub:'The userscript auto-syncs your service list to Step 6 on this page.', badge:'auto',
-        body:'<p>After scanning, just visit this page again. The Browser Assistant sends your tracked services here via the sync bridge. You can also export/import JSON if you want a manual backup.</p>' }
-    ]
-  },
-  {
-    id:'export', label:'Export Data', num:'3',
-    title:'Export Your Google Data',
-    eyebrow:'Step 3 of 7',
-    desc:'Download everything from Google using Takeout. The Browser Assistant helps you configure optimal settings on the Takeout page.',
-    actions:[
-      { id:'export_takeout', title:'Go to Google Takeout and request a full export', sub:'The Browser Assistant panel will appear with a Select All button and recommended settings.', badge:'required',
-        body:'<p>Select all services for a complete backup. Recommended: <strong>ZIP format</strong>, <strong>10GB+ file size</strong>, <strong>email delivery</strong>, <strong>single export</strong>.</p><div class="btn-row"><a href="https://takeout.google.com" target="_blank" class="btn btn-primary">Open Google Takeout</a></div>' },
-      { id:'export_wait', title:'Wait for Google to prepare your archive', sub:'Takes hours to days depending on data volume. Google emails you when ready.', badge:'manual',
-        body:'<p>Large accounts (especially Gmail and Photos) can take 24\u201348 hours. You\'ll receive an email with download links when each archive is ready. Continue with other steps while waiting.</p>' },
-      { id:'export_download', title:'Download all Takeout ZIP files to one folder', sub:'Don\'t extract them yet \u2014 the PowerShell Toolkit handles that in Step 4.', badge:'required',
-        body:'<p>Large accounts may produce 10+ archive files split at 10GB each. Download every one and save them in a single local folder.</p>' },
-      { id:'export_passwords', title:'Export Chrome saved passwords as CSV', sub:'chrome://settings/passwords \u2192 three-dot menu \u2192 Export passwords', badge:'required',
-        body:'<p>Navigate to <code>chrome://settings/passwords</code>, click the kebab menu (three dots), choose "Export passwords." Save the CSV file securely \u2014 it contains all passwords in plain text. You\'ll convert it in Step 4.</p>' },
-      { id:'export_bookmarks', title:'Export Chrome bookmarks as HTML', sub:'Bookmarks Manager \u2192 three-dot menu \u2192 Export bookmarks', badge:'manual',
-        body:'<p>Open Chrome\'s Bookmarks Manager (Ctrl+Shift+O), click the kebab menu at top-right, choose "Export bookmarks." Saves as HTML that any browser can import.</p>' }
-    ]
-  },
-  {
-    id:'process', label:'Process Data', num:'4',
-    title:'Process Your Exported Data',
-    eyebrow:'Step 4 of 7',
-    desc:'Run the PowerShell Toolkit to extract, repair, and convert your Takeout data into formats your new services can import.',
-    actions:[
-      { id:'proc_extract', title:'Run Takeout Archive Extractor', sub:'Toolkit Tool #1: Extracts all ZIPs and organizes into service folders (Gmail/, Drive/, Photos/, etc).', badge:'required',
-        body:'<p>Open the PowerShell Toolkit, select <strong>Takeout Archive Extractor</strong>, browse to your download folder, click Extract. Handles nested structures and organizes automatically.</p>' },
-      { id:'proc_photos', title:'Run Google Photos Metadata Restorer', sub:'Toolkit Tool #2: Fixes EXIF timestamps, GPS, and descriptions stripped by Takeout.', badge:'required',
-        body:'<p>Takeout strips metadata into separate JSON sidecar files. This tool auto-downloads ExifTool and merges metadata back into your photos. Point it at your extracted Photos folder.</p>' },
-      { id:'proc_passwords', title:'Run Chrome Password Converter', sub:'Toolkit Tool #3: Converts to Bitwarden, KeePass, 1Password, or Proton Pass format.', badge:'required',
-        body:'<p>Select your exported CSV and target password manager. The tool converts column mappings and optionally secure-deletes the source CSV when done.</p>' },
-      { id:'proc_gmail', title:'Run Gmail MBOX Processor (if needed)', sub:'Toolkit Tool #4: Splits MBOX into individual EML files organized by label.', badge:'manual',
-        body:'<p>Only needed if your new email provider requires individual EML files instead of MBOX import. Splits with sequential naming and label-based subfolders.</p>' },
-      { id:'proc_contacts', title:'Run Google Contacts Processor (if needed)', sub:'Toolkit Tool #6: Deduplicates, cleans phone numbers, standardizes vCard format.', badge:'manual',
-        body:'<p>Processes your exported VCF \u2014 removes duplicates, fixes encoding, standardizes phone formats, outputs clean vCard 3.0.</p>' }
-    ]
-  },
-  {
-    id:'accounts', label:'New Accounts', num:'5',
-    title:'Create New Accounts &amp; Import Data',
-    eyebrow:'Step 5 of 7',
-    desc:'Sign up for your chosen privacy-respecting alternatives and import your processed data. Use your new email address for all new signups.',
-    type:'alternatives'
-  },
-  {
-    id:'migrate', label:'Migrate Services', num:'6',
-    title:'Migrate Connected Services',
-    eyebrow:'Step 6 of 7',
-    desc:'Work through every service tied to your Google account. For each one: set a standalone password, update the email on file, then revoke Google access.',
-    type:'tracker'
-  },
-  {
-    id:'finish', label:'Finish', num:'7',
-    title:'Transition &amp; Final Cutover',
-    eyebrow:'Step 7 of 7',
-    desc:'Run old and new services in parallel for a few weeks, verify everything works, then cut the cord.',
-    actions:[
-      { id:'fin_forward', title:'Set up Gmail forwarding to your new email', sub:'Catches anything still sent to your old address during transition.', badge:'required',
-        body:'<p>Forward all incoming Gmail to your new email so you don\'t miss anything during the transition period.</p><div class="btn-row"><a href="https://mail.google.com/mail/u/0/#settings/fwdandpop" target="_blank" class="btn btn-ghost">Open Gmail Forwarding Settings</a></div>' },
-      { id:'fin_autoreply', title:'Set a Gmail vacation auto-reply with your new address', sub:'Tells anyone who emails your old address where to reach you.', badge:'manual',
-        body:'<p>Gmail Settings \u2192 "Vacation responder" \u2192 Set message like: "This address is no longer active. Reach me at [new email]."</p>' },
-      { id:'fin_2fa', title:'Re-enroll all 2FA tokens in your new authenticator', sub:'Move codes to Aegis, Ente Auth, or 2FAS before losing access to Google Authenticator.', badge:'required',
-        body:'<p>For each 2FA-enabled service: go to its security settings, disable old 2FA, re-enable and scan the QR with your new authenticator. Do NOT skip this step.</p>' },
-      { id:'fin_parallel', title:'Run old &amp; new services in parallel for 2\u20134 weeks', sub:'Every forwarded email that isn\'t spam = a service you haven\'t migrated yet.', badge:'required',
-        body:'<p>Monitor forwarded emails daily. Each one represents a service still using your Gmail. Update those as they trickle in until forwarding goes silent.</p>' },
-      { id:'fin_verify', title:'Verify all data migrated and all services accessible', sub:'Log into every new service. Confirm data is intact, 2FA works, email is updated.', badge:'required',
-        body:'<p>Systematic check: can you log in? Is your data there? Does 2FA work? Is the email on file your new one? Does the password manager have the credentials?</p>' },
-      { id:'fin_revoke', title:'Revoke all remaining third-party app access', sub:'Final cleanup: remove every remaining connection.', badge:'required',
-        body:'<div class="btn-row"><a href="https://myaccount.google.com/permissions" target="_blank" class="btn btn-ghost">Open Google Permissions</a></div>' },
-      { id:'fin_delete_services', title:'Delete data from individual Google services (optional)', sub:'Selectively remove your data from Google\'s servers before full account deletion.', badge:'manual',
-        body:'<div class="btn-row"><a href="https://myaccount.google.com/deleteservices" target="_blank" class="btn btn-ghost">Delete Individual Services</a></div>' },
-      { id:'fin_delete_account', title:'Delete your Google account entirely (optional)', sub:'IRREVERSIBLE. Only do this after completing every previous step.', badge:'manual',
-        body:'<p style="color:var(--red);font-weight:600">This permanently deletes your account and ALL associated data. Only proceed after verifying every service is migrated and all data is backed up.</p><div class="btn-row"><a href="https://myaccount.google.com/deleteaccount" target="_blank" class="btn btn-ghost" style="border-color:var(--red);color:var(--red)">Delete Google Account</a></div>' }
-    ]
-  }
+// ── Google Services Database (16 services, 51 alternatives) ──
+const SERVICES=[
+{id:"gmail",name:"Gmail",icon:"\u2709",cat:"Communication",diff:"Medium",alts:[
+{id:"protonmail",name:"Proton Mail",icon:"\uD83D\uDFE3",priv:5,cost:"Free / $4+/mo",ease:4,plat:"Web, iOS, Android, Desktop (Bridge)",desc:"Swiss-based, end-to-end encrypted email. Gold standard for privacy.",imp:"Settings \u2192 Import/Export \u2192 Import emails from MBOX file",url:"https://account.proton.me/signup"},
+{id:"tuta",name:"Tuta Mail",icon:"\uD83D\uDFE2",priv:5,cost:"Free / $3+/mo",ease:4,plat:"Web, iOS, Android, Desktop",desc:"German E2E encrypted email with built-in calendar. Fully open source.",imp:"Currently supports manual migration. Use desktop client for bulk import.",url:"https://app.tuta.com/signup"},
+{id:"fastmail",name:"Fastmail",icon:"\uD83D\uDD35",priv:4,cost:"$3+/mo",ease:5,plat:"Web, iOS, Android",desc:"Australian privacy-focused email. Excellent UI, great import tools, custom domains.",imp:"Settings \u2192 Migration \u2192 Add Gmail account for automatic import",url:"https://www.fastmail.com/signup/"},
+{id:"mailbox",name:"Mailbox.org",icon:"\uD83D\uDFE4",priv:5,cost:"\u20AC1+/mo",ease:3,plat:"Web, IMAP/SMTP",desc:"German privacy email with office suite, calendar, cloud storage. GDPR-first.",imp:"Use IMAP migration wizard in admin panel",url:"https://mailbox.org/en/"}]},
+{id:"gdrive",name:"Google Drive",icon:"\uD83D\uDCC1",cat:"Storage",diff:"Medium",alts:[
+{id:"protondrive",name:"Proton Drive",icon:"\uD83D\uDFE3",priv:5,cost:"Free 1GB / $4+/mo",ease:4,plat:"Web, iOS, Android, Desktop",desc:"E2E encrypted cloud storage from Proton. Integrates with Proton ecosystem.",imp:"Upload files directly through web or desktop client",url:"https://account.proton.me/signup"},
+{id:"nextcloud",name:"Nextcloud",icon:"\uD83D\uDD35",priv:5,cost:"Free (self-hosted)",ease:2,plat:"Web, iOS, Android, Desktop",desc:"Self-hosted cloud platform. Full Google Workspace replacement. Maximum control.",imp:"Upload via desktop sync client or web interface. Supports WebDAV.",url:"https://nextcloud.com/signup/"},
+{id:"tresorit",name:"Tresorit",icon:"\uD83D\uDFE2",priv:5,cost:"$11+/mo",ease:5,plat:"Web, iOS, Android, Desktop",desc:"Swiss E2E encrypted cloud storage. Business-grade with zero-knowledge encryption.",imp:"Install desktop app \u2192 drag and drop files from Takeout export",url:"https://tresorit.com/pricing"},
+{id:"filen",name:"Filen",icon:"\u26AA",priv:5,cost:"Free 10GB / $2+/mo",ease:4,plat:"Web, iOS, Android, Desktop",desc:"German zero-knowledge encrypted cloud. Fast uploads, generous free tier.",imp:"Upload via web or desktop client from Takeout export folder",url:"https://filen.io/r"}]},
+{id:"gsearch",name:"Google Search",icon:"\uD83D\uDD0D",cat:"Web",diff:"Easy",alts:[
+{id:"duckduckgo",name:"DuckDuckGo",icon:"\uD83E\uDD86",priv:5,cost:"Free",ease:5,plat:"Web, Browser, iOS, Android",desc:"Most popular private search engine. No tracking, no search history stored.",imp:"Set as default search engine in your browser settings",url:"https://duckduckgo.com"},
+{id:"brave_search",name:"Brave Search",icon:"\uD83E\uDD81",priv:5,cost:"Free / $3/mo",ease:5,plat:"Web, Brave Browser",desc:"Independent index (not reliant on Google/Bing). Built by Brave Software.",imp:"Set as default in browser or visit search.brave.com",url:"https://search.brave.com"},
+{id:"startpage",name:"Startpage",icon:"\uD83D\uDFE2",priv:5,cost:"Free",ease:5,plat:"Web",desc:"Anonymized Google results without the tracking. Best of both worlds.",imp:"Set as default search engine or use browser extension",url:"https://www.startpage.com"},
+{id:"kagi",name:"Kagi",icon:"\uD83D\uDFE1",priv:5,cost:"$5+/mo",ease:5,plat:"Web",desc:"Premium ad-free search. Superior results, no tracking, user-funded model.",imp:"Create account and set as default search engine",url:"https://kagi.com"}]},
+{id:"chrome",name:"Chrome",icon:"\uD83C\uDF10",cat:"Web",diff:"Easy",alts:[
+{id:"firefox",name:"Firefox",icon:"\uD83E\uDD8A",priv:4,cost:"Free",ease:5,plat:"Windows, Mac, Linux, iOS, Android",desc:"Open-source browser by Mozilla. Huge extension library. Community #1 for privacy.",imp:"Import bookmarks, passwords, history during first-run setup wizard",url:"https://www.mozilla.org/firefox/new/"},
+{id:"brave",name:"Brave",icon:"\uD83E\uDD81",priv:5,cost:"Free",ease:5,plat:"Windows, Mac, Linux, iOS, Android",desc:"Chromium-based with built-in ad/tracker blocking, VPN, and privacy features.",imp:"Import Chrome data during setup. Extensions are compatible.",url:"https://brave.com/download/"},
+{id:"librewolf",name:"LibreWolf",icon:"\uD83D\uDC3A",priv:5,cost:"Free",ease:3,plat:"Windows, Mac, Linux",desc:"Hardened Firefox fork. Maximum privacy out of the box. No telemetry.",imp:"Import Firefox/Chrome bookmarks via Library \u2192 Import and Backup",url:"https://librewolf.net"},
+{id:"vivaldi",name:"Vivaldi",icon:"\uD83C\uDFB5",priv:4,cost:"Free",ease:5,plat:"Windows, Mac, Linux, iOS, Android",desc:"Feature-rich Chromium browser. Built-in mail, calendar, notes. No tracking.",imp:"Import Chrome data during setup. Chromium extension compatible.",url:"https://vivaldi.com/download/"}]},
+{id:"gcalendar",name:"Google Calendar",icon:"\uD83D\uDCC5",cat:"Productivity",diff:"Easy",alts:[
+{id:"protoncalendar",name:"Proton Calendar",icon:"\uD83D\uDFE3",priv:5,cost:"Free with Proton",ease:4,plat:"Web, iOS, Android",desc:"E2E encrypted calendar. Seamlessly integrates with Proton Mail.",imp:"Settings \u2192 Import \u2192 Upload .ics file from Google Takeout",url:"https://account.proton.me/signup"},
+{id:"tutacalendar",name:"Tuta Calendar",icon:"\uD83D\uDFE2",priv:5,cost:"Free with Tuta",ease:4,plat:"Web, iOS, Android, Desktop",desc:"Encrypted calendar built into Tuta. Zero-knowledge encryption.",imp:"Import .ics calendar file through calendar settings",url:"https://app.tuta.com/signup"},
+{id:"etesync",name:"EteSync",icon:"\uD83D\uDD35",priv:5,cost:"$2/mo",ease:3,plat:"Web, iOS, Android, Desktop (DAV)",desc:"Secure E2E encrypted calendar/contacts sync. Works with standard CalDAV apps.",imp:"Import .ics files via web client or CalDAV-compatible app",url:"https://www.etesync.com"}]},
+{id:"gphotos",name:"Google Photos",icon:"\uD83D\uDCF7",cat:"Storage",diff:"Hard",alts:[
+{id:"immich",name:"Immich",icon:"\uD83D\uDCF8",priv:5,cost:"Free (self-hosted)",ease:2,plat:"Web, iOS, Android",desc:"Self-hosted Google Photos replacement. AI-powered face/object recognition locally.",imp:"Use CLI upload tool to bulk import from Takeout.",url:"https://immich.app"},
+{id:"ente",name:"Ente Photos",icon:"\uD83D\uDFE2",priv:5,cost:"Free 5GB / $3+/mo",ease:5,plat:"Web, iOS, Android, Desktop",desc:"E2E encrypted photo storage. Open source. AI features run on-device.",imp:"Desktop app \u2192 Import \u2192 Select Google Takeout photos folder",url:"https://ente.io"},
+{id:"photoprism",name:"PhotoPrism",icon:"\uD83C\uDF08",priv:5,cost:"Free (self-hosted) / $7+/mo",ease:3,plat:"Web, PWA",desc:"AI-powered self-hosted photo app. Browse by location, faces, subjects.",imp:"Copy photos to import directory, then run indexer via web UI",url:"https://www.photoprism.app"}]},
+{id:"gmaps",name:"Google Maps",icon:"\uD83D\uDDFA",cat:"Navigation",diff:"Easy",alts:[
+{id:"osmand",name:"OsmAnd",icon:"\uD83D\uDDFA",priv:5,cost:"Free / $10",ease:4,plat:"iOS, Android",desc:"Offline maps based on OpenStreetMap. No tracking, fully offline capable.",imp:"Download maps for your region. Import saved places as GPX.",url:"https://osmand.net"},
+{id:"organicmaps",name:"Organic Maps",icon:"\uD83C\uDF3F",priv:5,cost:"Free",ease:5,plat:"iOS, Android",desc:"Privacy-focused offline maps. Fork of Maps.me without tracking. Very fast.",imp:"Install and download offline maps. No account needed.",url:"https://organicmaps.app"},
+{id:"magicearth",name:"Magic Earth",icon:"\uD83C\uDF0D",priv:4,cost:"Free",ease:5,plat:"iOS, Android",desc:"Free navigation with real-time traffic. No tracking, no ads.",imp:"Install app. Supports offline maps and turn-by-turn navigation.",url:"https://www.magicearth.com"}]},
+{id:"youtube",name:"YouTube",icon:"\u25B6",cat:"Media",diff:"Hard",alts:[
+{id:"newpipe",name:"NewPipe",icon:"\uD83D\uDCFA",priv:5,cost:"Free",ease:4,plat:"Android (F-Droid)",desc:"Lightweight YouTube frontend. No Google account needed. Background play, downloads.",imp:"Export YouTube subscriptions via Takeout \u2192 Import OPML into NewPipe",url:"https://newpipe.net"},
+{id:"freetube",name:"FreeTube",icon:"\uD83D\uDCFA",priv:5,cost:"Free",ease:4,plat:"Windows, Mac, Linux",desc:"Desktop YouTube client. No tracking, no ads. Import subscriptions.",imp:"Settings \u2192 Data Settings \u2192 Import Subscriptions from YouTube/OPML",url:"https://freetubeapp.io"},
+{id:"invidious",name:"Invidious",icon:"\uD83D\uDD35",priv:5,cost:"Free",ease:3,plat:"Web (self-hosted / public instances)",desc:"Alternative YouTube frontend. No JavaScript required, no tracking.",imp:"Import subscriptions via OPML file from YouTube Takeout data",url:"https://invidious.io"},
+{id:"odysee",name:"Odysee / LBRY",icon:"\uD83D\uDFE3",priv:4,cost:"Free",ease:4,plat:"Web, iOS, Android, Desktop",desc:"Decentralized video platform. Blockchain-backed. Growing creator base.",imp:"YouTube Sync feature can auto-mirror your channel to Odysee",url:"https://odysee.com"}]},
+{id:"gdocs",name:"Docs/Sheets/Slides",icon:"\uD83D\uDCDD",cat:"Productivity",diff:"Medium",alts:[
+{id:"libreoffice",name:"LibreOffice",icon:"\uD83D\uDCC4",priv:5,cost:"Free",ease:5,plat:"Windows, Mac, Linux",desc:"Full open-source office suite. Excellent MS Office compatibility.",imp:"Google Takeout exports Docs as .docx, Sheets as .xlsx \u2014 open directly",url:"https://www.libreoffice.org/download/"},
+{id:"cryptpad",name:"CryptPad",icon:"\uD83D\uDD10",priv:5,cost:"Free / \u20AC5+/mo",ease:4,plat:"Web",desc:"Zero-knowledge encrypted collaborative suite. Docs, sheets, presentations.",imp:"Upload exported files to CryptPad Drive.",url:"https://cryptpad.fr"},
+{id:"onlyoffice",name:"ONLYOFFICE",icon:"\uD83D\uDFE6",priv:4,cost:"Free (self-hosted)",ease:4,plat:"Web, Windows, Mac, Linux",desc:"Full office suite compatible with MS formats. Self-hostable. Real-time collab.",imp:"Upload .docx/.xlsx/.pptx files from Takeout export directly",url:"https://www.onlyoffice.com"}]},
+{id:"gmeet",name:"Google Meet",icon:"\uD83D\uDCF9",cat:"Communication",diff:"Easy",alts:[
+{id:"jitsi",name:"Jitsi Meet",icon:"\uD83D\uDCF9",priv:5,cost:"Free",ease:5,plat:"Web, iOS, Android, Desktop",desc:"Open-source video conferencing. No account required. E2E encryption available.",imp:"No migration needed \u2014 just start using meet.jit.si or self-host",url:"https://meet.jit.si"},
+{id:"signal_video",name:"Signal (Video)",icon:"\uD83D\uDCAC",priv:5,cost:"Free",ease:5,plat:"iOS, Android, Desktop",desc:"E2E encrypted video calls for up to 50 people. Gold standard for secure comms.",imp:"Install Signal, verify phone number. Group video calls available.",url:"https://signal.org/download/"},
+{id:"element",name:"Element (Matrix)",icon:"\uD83D\uDFE2",priv:5,cost:"Free",ease:3,plat:"Web, iOS, Android, Desktop",desc:"Decentralized Matrix-based conferencing. Self-hostable, federated.",imp:"Create account on matrix.org or self-hosted server",url:"https://element.io"}]},
+{id:"gkeep",name:"Google Keep",icon:"\uD83D\uDCCC",cat:"Productivity",diff:"Easy",alts:[
+{id:"standardnotes",name:"Standard Notes",icon:"\uD83D\uDD12",priv:5,cost:"Free / $5+/mo",ease:5,plat:"All platforms",desc:"E2E encrypted notes. 100% open source. Longevity focused (100-year company).",imp:"Import from Google Keep JSON export via Standard Notes importer",url:"https://standardnotes.com"},
+{id:"joplin",name:"Joplin",icon:"\uD83D\uDCD3",priv:5,cost:"Free / \u20AC3+/mo sync",ease:4,plat:"All platforms",desc:"Open-source Markdown note-taking. E2E encrypted sync. Evernote import.",imp:"File \u2192 Import \u2192 Select Google Keep export files",url:"https://joplinapp.org"},
+{id:"obsidian",name:"Obsidian",icon:"\uD83D\uDC8E",priv:4,cost:"Free / $5+/mo sync",ease:4,plat:"All platforms",desc:"Powerful knowledge base. Local-first Markdown files. Plugin ecosystem.",imp:"Convert Keep notes to Markdown, place in Obsidian vault folder",url:"https://obsidian.md"}]},
+{id:"gauth",name:"Google Authenticator",icon:"\uD83D\uDD11",cat:"Security",diff:"Medium",alts:[
+{id:"aegis",name:"Aegis",icon:"\uD83D\uDEE1",priv:5,cost:"Free",ease:5,plat:"Android",desc:"Open-source 2FA app. Encrypted vault, biometric unlock, backup/restore.",imp:"Export from Google Authenticator \u2192 Import into Aegis",url:"https://getaegis.app"},
+{id:"enteauth",name:"Ente Auth",icon:"\uD83D\uDFE2",priv:5,cost:"Free",ease:5,plat:"iOS, Android, Web, Desktop",desc:"E2E encrypted 2FA with cloud backup. Cross-platform. Open source.",imp:"Scan QR codes or import from Google Authenticator export",url:"https://ente.io/auth/"},
+{id:"bitwarden_auth",name:"Bitwarden (TOTP)",icon:"\uD83D\uDD35",priv:5,cost:"$10/yr",ease:5,plat:"All platforms",desc:"Built-in TOTP authenticator in Bitwarden password manager. All in one place.",imp:"Add TOTP secret keys to existing Bitwarden vault entries",url:"https://bitwarden.com"}]},
+{id:"gpass",name:"Chrome Passwords",icon:"\uD83D\uDD12",cat:"Security",diff:"Medium",alts:[
+{id:"bitwarden",name:"Bitwarden",icon:"\uD83D\uDD35",priv:5,cost:"Free / $10/yr",ease:5,plat:"All platforms + extensions",desc:"Open-source password manager. Cloud sync, self-hostable. Community #1.",imp:"Export Chrome passwords as CSV \u2192 Bitwarden \u2192 Tools \u2192 Import Data",url:"https://vault.bitwarden.com/#/register"},
+{id:"keepassxc",name:"KeePassXC",icon:"\uD83D\uDFE2",priv:5,cost:"Free",ease:3,plat:"Windows, Mac, Linux",desc:"Offline-first open-source password manager. Local encrypted database.",imp:"Export Chrome passwords as CSV \u2192 KeePassXC \u2192 Import from CSV",url:"https://keepassxc.org/download/"},
+{id:"protonpass",name:"Proton Pass",icon:"\uD83D\uDFE3",priv:5,cost:"Free / $2+/mo",ease:5,plat:"All platforms + extensions",desc:"E2E encrypted password manager from Proton. Integrates with Proton ecosystem.",imp:"Export Chrome passwords as CSV \u2192 Proton Pass \u2192 Import",url:"https://proton.me/pass"}]},
+{id:"gtranslate",name:"Google Translate",icon:"\uD83C\uDF10",cat:"Utilities",diff:"Easy",alts:[
+{id:"deepl",name:"DeepL",icon:"\uD83D\uDD35",priv:4,cost:"Free / $9+/mo",ease:5,plat:"Web, Desktop, iOS, Android",desc:"Superior translation quality. European privacy standards.",imp:"Bookmark deepl.com or install desktop app",url:"https://www.deepl.com"},
+{id:"libretranslate",name:"LibreTranslate",icon:"\uD83D\uDFE2",priv:5,cost:"Free (self-hosted)",ease:3,plat:"Web, API",desc:"Open-source machine translation. Self-hostable. No tracking.",imp:"Use web interface or self-host your own instance",url:"https://libretranslate.com"}]},
+{id:"gplay",name:"Google Play Store",icon:"\uD83C\uDFAC",cat:"Android",diff:"Medium",alts:[
+{id:"fdroid",name:"F-Droid",icon:"\uD83E\uDD16",priv:5,cost:"Free",ease:4,plat:"Android",desc:"FOSS app repository. All apps are free and open source. No tracking.",imp:"Download F-Droid APK from f-droid.org \u2192 Install \u2192 Browse apps",url:"https://f-droid.org"},
+{id:"aurora",name:"Aurora Store",icon:"\uD83C\uDF0C",priv:4,cost:"Free",ease:4,plat:"Android",desc:"Access Play Store apps without a Google account. Anonymous downloads.",imp:"Install from F-Droid \u2192 Use anonymous login \u2192 Download apps",url:"https://auroraoss.com"}]},
+{id:"gandroid",name:"Android OS (Stock)",icon:"\uD83D\uDCF1",cat:"Android",diff:"Hard",alts:[
+{id:"grapheneos",name:"GrapheneOS",icon:"\uD83D\uDD12",priv:5,cost:"Free",ease:2,plat:"Google Pixel only",desc:"Hardened Android. Maximum security & privacy. Sandboxed Google Play available.",imp:"Web installer at grapheneos.org. Requires unlocked Pixel.",url:"https://grapheneos.org/install/web"},
+{id:"lineageos",name:"LineageOS",icon:"\uD83D\uDFE2",priv:4,cost:"Free",ease:2,plat:"Many Android devices",desc:"Open-source Android ROM. Wide device support. No Google services by default.",imp:"Check device support \u2192 Unlock bootloader \u2192 Flash via recovery",url:"https://lineageos.org"},
+{id:"calyxos",name:"CalyxOS",icon:"\uD83C\uDF3F",priv:5,cost:"Free",ease:3,plat:"Pixel, Fairphone",desc:"Privacy-focused Android with microG. Good balance of privacy and usability.",imp:"Flash via CalyxOS installer tool for supported devices",url:"https://calyxos.org"}]}
 ];
 
-const ALTS = [
-  { from:'Gmail', to:'Proton Mail', cost:'Free / $4+/mo', diff:'medium', url:'https://account.proton.me/signup' },
-  { from:'Google Drive', to:'Proton Drive', cost:'Free 5GB', diff:'easy', url:'https://account.proton.me/signup' },
-  { from:'Chrome', to:'Firefox / Brave', cost:'Free', diff:'easy', url:'https://www.mozilla.org/firefox/' },
-  { from:'Google Search', to:'Brave Search', cost:'Free', diff:'easy', url:'https://search.brave.com' },
-  { from:'Calendar', to:'Proton Calendar', cost:'Free', diff:'easy', url:'https://account.proton.me/signup' },
-  { from:'Google Photos', to:'Ente Photos', cost:'Free 5GB', diff:'easy', url:'https://ente.io' },
-  { from:'YouTube', to:'NewPipe / FreeTube', cost:'Free', diff:'medium', url:'https://newpipe.net' },
-  { from:'Google Maps', to:'Organic Maps', cost:'Free', diff:'medium', url:'https://organicmaps.app' },
-  { from:'Google Keep', to:'Standard Notes', cost:'Free', diff:'easy', url:'https://standardnotes.com' },
-  { from:'Authenticator', to:'Aegis / Ente Auth', cost:'Free', diff:'easy', url:'https://getaegis.app' },
-  { from:'Chrome Passwords', to:'Bitwarden', cost:'Free', diff:'easy', url:'https://vault.bitwarden.com/#/register' },
-  { from:'Messages', to:'Signal', cost:'Free', diff:'easy', url:'https://signal.org' },
-  { from:'Android (GApps)', to:'GrapheneOS', cost:'Free', diff:'hard', url:'https://grapheneos.org' },
-  { from:'Play Store', to:'F-Droid / Aurora', cost:'Free', diff:'medium', url:'https://f-droid.org' },
+const CATS=[...new Set(SERVICES.map(s=>s.cat))];
+
+// ── Wizard Steps ──
+const STEPS=[
+{id:'welcome',label:'Welcome',num:'~',eyebrow:'DeGoogler',title:'Take Back Your Digital Life',desc:'A complete open-source toolkit for leaving Google. This guide walks you through every step.',type:'welcome'},
+{id:'install',label:'Install Tools',num:'1',eyebrow:'Step 1 of 7',title:'Install the Toolkit',desc:'Two tools to install. The Browser Assistant automates tasks on Google pages. The PowerShell Toolkit processes your exported data on Windows.',actions:[
+{id:'install_tm',title:'Install Tampermonkey browser extension',sub:'Required for the Browser Assistant userscript to run.',badge:'r',body:'<p>Tampermonkey lets you run userscripts. Install from your browser\'s extension store:</p><div class="br"><a href="https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo" target="_blank" class="btn bg">Chrome</a><a href="https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/" target="_blank" class="btn bg">Firefox</a><a href="https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd" target="_blank" class="btn bg">Edge</a></div>'},
+{id:'install_us',title:'Install DeGoogler Browser Assistant userscript',sub:'Click below \u2014 Tampermonkey will prompt you to install.',badge:'r',body:'<p>Activates automatically on Google Takeout, YouTube, Gmail, and your Google Account pages. Syncs migration data back to this page.</p><div class="br"><a href="https://github.com/SysAdminDoc/DeGoogler/raw/refs/heads/main/DeGoogler-BrowserAssistant.user.js" class="btn bp">Install Userscript</a></div>'},
+{id:'install_ps',title:'Download the PowerShell Toolkit (Windows)',sub:'Desktop app for processing exported data. You\'ll use it in Step 4.',badge:'m',body:'<p>Download the script or run the one-liner in an elevated PowerShell window:</p><div class="code"><button class="ccpy" onclick="cpy(\'irm https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/refs/heads/main/DeGoogler-Toolkit.ps1 | iex\')">Copy</button><span class="cm"># PowerShell as Administrator</span><br>irm https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/refs/heads/main/DeGoogler-Toolkit.ps1 | iex</div><div class="br"><a href="https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/refs/heads/main/DeGoogler-Toolkit.ps1" download class="btn bg">Download .ps1</a></div>'}]},
+{id:'scan',label:'Scan Connections',num:'2',eyebrow:'Step 2 of 7',title:'Find Everything Tied to Google',desc:'The step most guides skip. Every "Sign in with Google" login and every service using your Gmail must be migrated.',actions:[
+{id:'scan_go',title:'Open your Google Third-Party Connections page',sub:'The Browser Assistant panel will appear on the right side.',badge:'r',body:'<p>Lists every app connected to your Google account \u2014 OAuth logins and data access permissions.</p><div class="br"><a href="https://myaccount.google.com/connections?hl=en" target="_blank" class="btn bp">Open Google Connections</a></div>'},
+{id:'scan_si',title:'Click "Scan Sign-In Apps" in the DeGoogler panel',sub:'Auto-detects every service using "Sign in with Google" as login.',badge:'a',body:'<p>Reads Google\'s Sign-in tab, captures each service name, icon, and detail URL. Services get auto-classified by priority.</p>'},
+{id:'scan_ac',title:'Click "Scan Access Apps" in the DeGoogler panel',sub:'Detects apps with access to your Google data (Drive, Calendar, etc).',badge:'a',body:'<p>These apps were granted permission to read/write Google data. Need access revoked but may not need password migration.</p>'},
+{id:'scan_man',title:'Manually add email-registered accounts',sub:'Think through: banking, insurance, government, medical, employer, shopping, social media.',badge:'m',body:'<p>The scanner only finds OAuth apps. You also need to migrate every service where Gmail is the registered email.</p><p><strong>Don\'t forget:</strong> Banking, credit cards, IRS, SSA, DMV, health insurance, patient portals, employer HR, payroll, domain registrars, cloud hosting, subscriptions, utilities, social media, Amazon, eBay.</p>'},
+{id:'scan_ret',title:'Return to this page to see your synced tracker',sub:'The userscript auto-syncs your service list to Step 6 on this page.',badge:'a',body:'<p>After scanning, just visit this page. The Browser Assistant sends your tracked services here automatically.</p>'}]},
+{id:'export',label:'Export Data',num:'3',eyebrow:'Step 3 of 7',title:'Export Your Google Data',desc:'Download everything from Google Takeout. The Browser Assistant helps configure optimal settings.',actions:[
+{id:'exp_go',title:'Go to Google Takeout and request a full export',sub:'The Browser Assistant shows a Select All button and settings guide.',badge:'r',body:'<p>Select all services. Recommended: <strong>ZIP</strong>, <strong>10GB+ size</strong>, <strong>email delivery</strong>, <strong>single export</strong>.</p><div class="br"><a href="https://takeout.google.com" target="_blank" class="btn bp">Open Google Takeout</a></div>'},
+{id:'exp_wait',title:'Wait for Google to prepare your archive',sub:'Takes hours to days. Google emails you when ready.',badge:'m',body:'<p>Large accounts can take 24\u201348 hours. Continue with other steps while waiting.</p>'},
+{id:'exp_dl',title:'Download all Takeout ZIP files to one folder',sub:'Don\'t extract yet \u2014 the PowerShell Toolkit handles that.',badge:'r',body:'<p>Large accounts may produce 10+ files at 10GB each. Download all to one folder.</p>'},
+{id:'exp_pw',title:'Export Chrome saved passwords as CSV',sub:'chrome://settings/passwords \u2192 three-dot menu \u2192 Export',badge:'r',body:'<p>Navigate to <code>chrome://settings/passwords</code>, export as CSV. Save securely \u2014 contains all passwords in plain text.</p>'},
+{id:'exp_bk',title:'Export Chrome bookmarks as HTML',sub:'Bookmarks Manager \u2192 three-dot menu \u2192 Export',badge:'m',body:'<p>Ctrl+Shift+O to open Bookmarks Manager, kebab menu at top-right, Export bookmarks.</p>'}]},
+{id:'process',label:'Process Data',num:'4',eyebrow:'Step 4 of 7',title:'Process Your Exported Data',desc:'Run the PowerShell Toolkit to extract, repair, and convert Takeout data for your new services.',actions:[
+{id:'proc_ext',title:'Run Takeout Archive Extractor',sub:'Tool #1: Extracts all ZIPs, organizes into service folders.',badge:'r',body:'<p>Select <strong>Takeout Archive Extractor</strong>, browse to your download folder, click Extract.</p>'},
+{id:'proc_pho',title:'Run Google Photos Metadata Restorer',sub:'Tool #2: Fixes EXIF timestamps, GPS, descriptions stripped by Takeout.',badge:'r',body:'<p>Auto-downloads ExifTool and merges JSON sidecar metadata back into photos.</p>'},
+{id:'proc_pw',title:'Run Chrome Password Converter',sub:'Tool #3: Converts to Bitwarden, KeePass, 1Password, or Proton Pass.',badge:'r',body:'<p>Select exported CSV, choose target password manager. Optionally secure-deletes source CSV.</p>'},
+{id:'proc_mail',title:'Run Gmail MBOX Processor (if needed)',sub:'Tool #4: Splits MBOX into individual EMLs by label.',badge:'m',body:'<p>Only needed if your new email requires individual EML files instead of MBOX import.</p>'},
+{id:'proc_con',title:'Run Google Contacts Processor (if needed)',sub:'Tool #6: Deduplicates, cleans phone numbers, standardizes vCard.',badge:'m',body:'<p>Processes VCF \u2014 removes duplicates, fixes encoding, outputs clean vCard 3.0.</p>'}]},
+{id:'accounts',label:'New Accounts',num:'5',eyebrow:'Step 5 of 7',title:'Choose Alternatives & Import Data',desc:'Browse all 16 Google services and their privacy-respecting replacements. Pick your alternatives and import your processed data.',type:'alternatives'},
+{id:'migrate',label:'Migrate Services',num:'6',eyebrow:'Step 6 of 7',title:'Migrate Connected Services',desc:'Work through every service from Step 2. Set passwords, update emails, revoke Google access. This is the tracker.',type:'tracker'},
+{id:'finish',label:'Finish',num:'7',eyebrow:'Step 7 of 7',title:'Transition & Final Cutover',desc:'Run old and new services in parallel, verify everything, then cut the cord.',actions:[
+{id:'fin_fwd',title:'Set up Gmail forwarding to your new email',sub:'Catches anything still sent to your old address.',badge:'r',body:'<div class="br"><a href="https://mail.google.com/mail/u/0/#settings/fwdandpop" target="_blank" class="btn bg">Gmail Forwarding Settings</a></div>'},
+{id:'fin_auto',title:'Set Gmail auto-reply with your new address',sub:'Tells contacts where to reach you.',badge:'m',body:'<p>Gmail Settings \u2192 Vacation responder \u2192 "This address is no longer active. Reach me at [new email]."</p>'},
+{id:'fin_2fa',title:'Re-enroll all 2FA tokens in new authenticator',sub:'Move codes to Aegis, Ente Auth, or 2FAS.',badge:'r',body:'<p>For each 2FA service: disable old, re-enable, scan QR with new authenticator.</p>'},
+{id:'fin_par',title:'Run old & new services in parallel 2\u20134 weeks',sub:'Every forwarded email = a service you haven\'t migrated.',badge:'r',body:'<p>Monitor forwarded emails daily. Update services as they trickle in.</p>'},
+{id:'fin_ver',title:'Verify all data and service access',sub:'Log into every new service, confirm data, 2FA, email on file.',badge:'r',body:'<p>Systematic check: login works, data intact, 2FA works, email updated, password manager has credentials.</p>'},
+{id:'fin_rev',title:'Revoke all remaining third-party access',sub:'Final cleanup of Google permissions.',badge:'r',body:'<div class="br"><a href="https://myaccount.google.com/permissions" target="_blank" class="btn bg">Google Permissions</a></div>'},
+{id:'fin_del',title:'Delete data from Google services (optional)',sub:'Selectively remove your data.',badge:'m',body:'<div class="br"><a href="https://myaccount.google.com/deleteservices" target="_blank" class="btn bg">Delete Services</a></div>'},
+{id:'fin_nuke',title:'Delete Google account entirely (optional)',sub:'IRREVERSIBLE. Only after completing everything above.',badge:'m',body:'<p style="color:var(--red);font-weight:600">Permanently deletes your account and ALL data.</p><div class="br"><a href="https://myaccount.google.com/deleteaccount" target="_blank" class="btn bg" style="border-color:var(--red);color:var(--red)">Delete Account</a></div>'}]}
 ];
 
 // ── State ──
-let cur = 0;
-let checks = {};
-try { checks = JSON.parse(localStorage.getItem('dg-checks') || '{}'); } catch {}
-function saveChecks() { localStorage.setItem('dg-checks', JSON.stringify(checks)); }
+let cur=0,checks={},catFil='All';
+try{checks=JSON.parse(localStorage.getItem('dg-chk')||'{}')}catch{}
+function saveCk(){localStorage.setItem('dg-chk',JSON.stringify(checks))}
 
-// ── Tracker state ──
-const TK = 'degoogler-tracker-services';
-function loadT() { try { return JSON.parse(localStorage.getItem(TK) || '[]'); } catch { return []; } }
-function saveT(d) { localStorage.setItem(TK, JSON.stringify(d)); }
-function tSteps(t) { return t==='oauth'?['password','email','disconnect','verified']:t==='access'?['review','disconnect','verified']:['email','verified']; }
-function tLbls(t) { return t==='oauth'?{password:'PW',email:'EM',disconnect:'RV',verified:'OK'}:t==='access'?{review:'RV',disconnect:'DC',verified:'OK'}:{email:'EM',verified:'OK'}; }
-let tFil = 'all';
+// Tracker
+const TK='degoogler-tracker-services';
+function ldT(){try{return JSON.parse(localStorage.getItem(TK)||'[]')}catch{return[]}}
+function svT(d){localStorage.setItem(TK,JSON.stringify(d))}
+function tSt(t){return t==='oauth'?['password','email','disconnect','verified']:t==='access'?['review','disconnect','verified']:['email','verified']}
+function tLb(t){return t==='oauth'?{password:'PW',email:'EM',disconnect:'RV',verified:'OK'}:t==='access'?{review:'RV',disconnect:'DC',verified:'OK'}:{email:'EM',verified:'OK'}}
+let tFil='all';
 
-// ── Escape HTML ──
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function dots(n,max){let h='<span class="dots">';for(let i=0;i<max;i++)h+='<span class="dot'+(i<n?' f':'')+'"></span>';return h+'</span>'}
 
 // ── Sidebar ──
-function renderSidebar() {
-  const nav = document.getElementById('sidebar-nav');
-  nav.innerHTML = '';
-  let totalActs = 0, doneActs = 0;
-  STEPS.forEach((step, i) => {
-    const acts = step.actions || [];
-    const allDone = acts.length > 0 && acts.every(a => checks[a.id]);
-    // Count alt step actions too
-    if (step.type === 'alternatives') {
-      ['alt_password_mgr','alt_email','alt_import'].forEach(id => { totalActs++; if (checks[id]) doneActs++; });
-    }
-    acts.forEach(a => { totalActs++; if (checks[a.id]) doneActs++; });
-
-    const el = document.createElement('div');
-    el.className = 'nav-item' + (i === cur ? ' active' : '') + (allDone && acts.length > 0 ? ' completed' : '');
-    el.innerHTML = '<div class="nav-num">' + (allDone && acts.length > 0 ? '\u2713' : step.num) + '</div><div class="nav-label">' + step.label + '</div>';
-    el.onclick = () => { cur = i; render(); document.querySelector('.sidebar').classList.remove('open'); };
+function renderSB(){
+  const nav=document.getElementById('sn');nav.innerHTML='';
+  let tA=0,dA=0;
+  STEPS.forEach((s,i)=>{
+    const acts=s.actions||[];
+    const allDn=acts.length>0&&acts.every(a=>checks[a.id]);
+    if(s.type==='alternatives')['alt_pm','alt_em','alt_imp'].forEach(id=>{tA++;if(checks[id])dA++});
+    acts.forEach(a=>{tA++;if(checks[a.id])dA++});
+    const el=document.createElement('div');
+    el.className='ni'+(i===cur?' act':'')+(allDn&&acts.length>0?' dn':'');
+    el.innerHTML='<div class="nn">'+(allDn&&acts.length>0?'\u2713':s.num)+'</div><div class="nl">'+s.label+'</div>';
+    el.onclick=()=>{cur=i;render();document.querySelector('.sidebar').classList.remove('open')};
     nav.appendChild(el);
   });
-
-  // Include tracker progress
-  const td = loadT();
-  td.forEach(s => { const st = tSteps(s.type); totalActs += st.length; doneActs += st.filter(k => s.steps && s.steps[k]).length; });
-
-  const pct = totalActs > 0 ? Math.round((doneActs / totalActs) * 100) : 0;
-  document.getElementById('global-progress').style.width = pct + '%';
-  document.getElementById('global-pct').textContent = pct + '%';
-  document.getElementById('global-count').textContent = doneActs + ' / ' + totalActs;
+  const td=ldT();td.forEach(s=>{const st=tSt(s.type);tA+=st.length;dA+=st.filter(k=>s.steps&&s.steps[k]).length});
+  const p=tA>0?Math.round(dA/tA*100):0;
+  document.getElementById('gp').style.width=p+'%';
+  document.getElementById('gpct').textContent=p+'%';
+  document.getElementById('gcnt').textContent=dA+' / '+tA;
 }
 
 // ── Render ──
-function render() {
-  const step = STEPS[cur];
-  const C = document.getElementById('content');
-  let h = '';
+function render(){
+  const s=STEPS[cur],C=document.getElementById('ct');let h='';
+  if(s.type==='welcome')h=mkWelcome(s);
+  else if(s.type==='alternatives')h=mkHdr(s)+mkAlts()+mkNav();
+  else if(s.type==='tracker')h=mkHdr(s)+mkTracker()+mkNav();
+  else{h=mkHdr(s);(s.actions||[]).forEach(a=>{h+=mkAct(a)});h+=mkNav()}
+  C.innerHTML=h;wireAct();if(s.type==='tracker')wireTrk();if(s.type==='alternatives')wireAlts();
+  renderSB();window.scrollTo(0,0);
+}
 
-  if (step.type === 'welcome') {
-    h += '<div class="hero-welcome"><h1>' + step.title + '</h1>';
-    h += '<p>' + step.desc + '</p>';
-    h += '<div class="hero-flow">';
-    ['Install','Scan','Export','Process','Switch','Migrate','Finish'].forEach((l, i) => {
-      if (i > 0) h += '<span class="flow-arrow">\u2192</span>';
-      h += '<div class="flow-step"><span class="flow-num">' + (i+1) + '</span>' + l + '</div>';
+function mkWelcome(s){
+  let h='<div class="hw"><h1>'+s.title+'</h1><p>'+s.desc+'</p><div class="hfl">';
+  ['Install','Scan','Export','Process','Switch','Migrate','Finish'].forEach((l,i)=>{
+    if(i>0)h+='<span class="hfa">\u2192</span>';
+    h+='<div class="hfs"><span class="hfn">'+(i+1)+'</span>'+l+'</div>';
+  });
+  h+='</div><div class="br" style="justify-content:center">';
+  h+='<button class="btn bp" onclick="cur=1;render()">Get Started \u2192</button>';
+  h+='<a href="https://github.com/SysAdminDoc/DeGoogler" target="_blank" class="btn bg"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:-2px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> GitHub</a>';
+  h+='</div></div>';return h;
+}
+
+function mkHdr(s){return'<div class="sh"><div class="sey">'+s.eyebrow+'</div><div class="stl">'+s.title+'</div><div class="sd">'+s.desc+'</div></div>'}
+
+function mkAct(a){
+  const dn=checks[a.id];
+  const bc=a.badge==='r'?'abg-r':a.badge==='a'?'abg-a':'abg-m';
+  const bl=a.badge==='r'?'Required':a.badge==='a'?'Automated':'Manual';
+  let h='<div class="ac'+(dn?' dn':'')+'" data-id="'+a.id+'">';
+  h+='<div class="ah"><div class="ack'+(dn?' dn':'')+'" data-id="'+a.id+'">'+(dn?'\u2713':'')+'</div>';
+  h+='<div class="ainf"><div class="atl">'+a.title+'</div>';
+  if(a.sub)h+='<div class="asu">'+a.sub+'</div>';
+  h+='</div><span class="abg '+bc+'">'+bl+'</span></div>';
+  if(a.body)h+='<div class="abd">'+a.body+'</div>';
+  h+='</div>';return h;
+}
+
+function mkNav(){
+  let h='<div class="snav">';
+  h+=cur>0?'<button class="btn bg" onclick="cur--;render()">\u2190 Back</button>':'<div></div>';
+  h+=cur<STEPS.length-1?'<button class="btn bp" onclick="cur++;render()">Continue \u2192</button>':'<div></div>';
+  return h+'</div>';
+}
+
+function wireAct(){
+  document.querySelectorAll('.ack').forEach(el=>{
+    el.addEventListener('click',e=>{e.stopPropagation();checks[el.dataset.id]=!checks[el.dataset.id];saveCk();render()});
+  });
+  document.querySelectorAll('.ah').forEach(el=>{
+    el.addEventListener('click',e=>{if(e.target.closest('.ack'))return;el.closest('.ac').classList.toggle('exp')});
+  });
+}
+
+// ── Alternatives (full 16-service database) ──
+function mkAlts(){
+  let h='<div class="cflt"><button class="cf act" data-cat="All">All ('+SERVICES.length+')</button>';
+  CATS.forEach(c=>{const n=SERVICES.filter(s=>s.cat===c).length;h+='<button class="cf" data-cat="'+c+'">'+c+' ('+n+')</button>'});
+  h+='</div>';
+  const filtered=catFil==='All'?SERVICES:SERVICES.filter(s=>s.cat===catFil);
+  filtered.forEach(svc=>{
+    const dc=svc.diff==='Easy'?'d-e':svc.diff==='Hard'?'d-h':'d-m';
+    h+='<div class="svc" data-sid="'+svc.id+'"><div class="svh">';
+    h+='<span class="svi">'+svc.icon+'</span><span class="svn">'+svc.name+'</span>';
+    h+='<span class="svc-cat">'+svc.cat+'</span><span class="svc-diff '+dc+'">'+svc.diff+'</span>';
+    h+='<span class="svch">\u276F</span></div><div class="svb">';
+    svc.alts.forEach(a=>{
+      h+='<div class="alt"><div class="altp"><span class="altn">'+a.icon+' '+a.name+'</span>';
+      h+='<span class="altr"><span>'+dots(a.priv,5)+' Privacy</span><span>'+dots(a.ease,5)+' Ease</span></span></div>';
+      h+='<div class="altd">'+a.desc+'</div>';
+      h+='<div class="altm"><strong>Cost:</strong> '+a.cost+' &middot; <strong>Platforms:</strong> '+a.plat+'</div>';
+      h+='<div class="alti">\u2192 '+a.imp+'</div>';
+      h+='<div class="br" style="margin-top:0"><a href="'+a.url+'" target="_blank" class="btn bg" style="padding:6px 14px;font-size:10px">Sign Up</a></div>';
+      h+='</div>';
     });
-    h += '</div>';
-    h += '<div class="btn-row" style="justify-content:center">';
-    h += '<button class="btn btn-primary" onclick="cur=1;render()">Get Started \u2192</button>';
-    h += '<a href="https://github.com/SysAdminDoc/DeGoogler" target="_blank" class="btn btn-ghost">';
-    h += '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:-2px"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> GitHub</a>';
-    h += '</div></div>';
-  } else if (step.type === 'tracker') {
-    h += mkHeader(step) + mkTracker() + mkNav();
-  } else if (step.type === 'alternatives') {
-    h += mkHeader(step) + mkAlts() + mkNav();
-  } else {
-    h += mkHeader(step);
-    (step.actions || []).forEach(a => { h += mkAction(a); });
-    h += mkNav();
-  }
-
-  C.innerHTML = h;
-  wireActions();
-  if (step.type === 'tracker') wireTracker();
-  renderSidebar();
-  window.scrollTo(0, 0);
-}
-
-function mkHeader(s) {
-  return '<div class="step-header"><div class="step-eyebrow">' + s.eyebrow + '</div><div class="step-title">' + s.title + '</div><div class="step-desc">' + s.desc + '</div></div>';
-}
-
-function mkAction(a) {
-  const done = checks[a.id];
-  const bc = a.badge === 'required' ? 'badge-required' : a.badge === 'auto' ? 'badge-auto' : 'badge-manual';
-  const bl = a.badge === 'required' ? 'Required' : a.badge === 'auto' ? 'Automated' : 'Manual';
-  let h = '<div class="action' + (done ? ' done' : '') + '" data-id="' + a.id + '">';
-  h += '<div class="action-header">';
-  h += '<div class="action-check' + (done ? ' done' : '') + '" data-id="' + a.id + '">' + (done ? '\u2713' : '') + '</div>';
-  h += '<div class="action-info"><div class="action-title">' + a.title + '</div>';
-  if (a.sub) h += '<div class="action-sub">' + a.sub + '</div>';
-  h += '</div><span class="action-badge ' + bc + '">' + bl + '</span></div>';
-  if (a.body) h += '<div class="action-body">' + a.body + '</div>';
-  h += '</div>';
+    h+='</div></div>';
+  });
+  // Checklist actions
+  h+='<div style="margin-top:24px">';
+  h+=mkAct({id:'alt_pm',title:'Set up a password manager first',sub:'Import converted Chrome passwords from Step 4.',badge:'r',body:'<p>Bitwarden (free, open source) or Proton Pass. Import the converted CSV.</p>'});
+  h+=mkAct({id:'alt_em',title:'Create your new email account',sub:'This becomes your primary identity going forward.',badge:'r',body:'<p>Proton Mail, Tuta, or Fastmail. Use this new email for all future signups.</p>'});
+  h+=mkAct({id:'alt_imp',title:'Import processed data into each new service',sub:'MBOX for email, VCF for contacts, ICS for calendar, photos with restored EXIF.',badge:'r',body:'<p>Work through each service you chose above and follow the import guide listed on each card.</p>'});
+  h+='</div>';
   return h;
 }
 
-function mkNav() {
-  let h = '<div class="step-nav">';
-  h += cur > 0 ? '<button class="btn btn-ghost" onclick="cur--;render()">\u2190 Back</button>' : '<div></div>';
-  h += cur < STEPS.length - 1 ? '<button class="btn btn-primary" onclick="cur++;render()">Continue \u2192</button>' : '<div></div>';
-  h += '</div>';
-  return h;
-}
-
-function wireActions() {
-  document.querySelectorAll('.action-check').forEach(el => {
-    el.addEventListener('click', e => { e.stopPropagation(); checks[el.dataset.id] = !checks[el.dataset.id]; saveChecks(); render(); });
+function wireAlts(){
+  document.querySelectorAll('.cf').forEach(el=>{
+    el.addEventListener('click',()=>{catFil=el.dataset.cat;render()});
   });
-  document.querySelectorAll('.action-header').forEach(el => {
-    el.addEventListener('click', e => { if (e.target.closest('.action-check')) return; el.closest('.action').classList.toggle('expanded'); });
+  document.querySelectorAll('.svh').forEach(el=>{
+    el.addEventListener('click',()=>{el.closest('.svc').classList.toggle('open')});
   });
-}
-
-// ── Alternatives ──
-function mkAlts() {
-  let h = '';
-  ALTS.forEach(a => {
-    const dc = a.diff === 'easy' ? 'diff-easy' : a.diff === 'hard' ? 'diff-hard' : 'diff-medium';
-    h += '<div class="alt-row"><span class="alt-from">' + a.from + '</span><span class="alt-arrow">\u2192</span>';
-    h += '<span class="alt-to"><a href="' + a.url + '" target="_blank">' + a.to + '</a></span>';
-    h += '<span class="alt-meta">' + a.cost + '</span><span class="alt-diff ' + dc + '">' + a.diff + '</span></div>';
-  });
-
-  h += '<div style="margin-top:24px">';
-  h += mkAction({ id:'alt_password_mgr', title:'Set up a password manager first', sub:'Import your converted Chrome passwords from Step 4.', badge:'required',
-    body:'<p>Bitwarden (free, open source) or Proton Pass. Import the converted CSV from the PowerShell Toolkit.</p>' });
-  h += mkAction({ id:'alt_email', title:'Create your new email account', sub:'This becomes your primary identity going forward. Use it for every new signup.', badge:'required',
-    body:'<p>Recommended: Proton Mail, Tuta, or Fastmail. All support MBOX import for migrating your Gmail archive.</p>' });
-  h += mkAction({ id:'alt_import', title:'Import your processed data into each new service', sub:'Use the files from Step 4: MBOX for email, VCF for contacts, ICS for calendar, photos folder with restored EXIF.', badge:'required',
-    body:'<p><strong>Email:</strong> Import MBOX file. <strong>Photos:</strong> Upload restored folder. <strong>Calendar:</strong> Import .ics files. <strong>Contacts:</strong> Import cleaned VCF. <strong>Cloud:</strong> Upload Drive export.</p>' });
-  h += '</div>';
-  return h;
 }
 
 // ── Tracker ──
-function mkTracker() {
-  const data = loadT();
-  let total=0, migrated=0, inProg=0, pending=0, crit=0, imp=0, opt=0, done=0;
-  data.forEach(s => {
-    const st = tSteps(s.type);
-    const d = st.filter(k => s.steps && s.steps[k]).length;
-    const isDone = d === st.length;
-    total++; if (isDone){migrated++;done++;} else if (d>0) inProg++; else pending++;
-    if (s.priority==='critical') crit++; else if (s.priority==='important') imp++; else opt++;
+function mkTracker(){
+  const data=ldT();let tot=0,mig=0,inp=0,pen=0,cr=0,im=0,op=0,dn=0;
+  data.forEach(s=>{const st=tSt(s.type);const d=st.filter(k=>s.steps&&s.steps[k]).length;const isDn=d===st.length;tot++;if(isDn){mig++;dn++}else if(d>0)inp++;else pen++;if(s.priority==='critical')cr++;else if(s.priority==='important')im++;else op++});
+  const pct=tot>0?Math.round(mig/tot*100):0;
+  let h='<div class="tsts"><div class="tsx"><div class="tsn">'+tot+'</div><div class="tsl">Total</div></div>';
+  h+='<div class="tsx"><div class="tsn" style="color:var(--grn)">'+mig+'</div><div class="tsl">Migrated</div></div>';
+  h+='<div class="tsx"><div class="tsn" style="color:var(--org)">'+inp+'</div><div class="tsl">In Progress</div></div>';
+  h+='<div class="tsx"><div class="tsn" style="color:var(--red)">'+pen+'</div><div class="tsl">Not Started</div></div></div>';
+  h+='<div class="tbar"><div class="pbar"><div class="pfill" style="width:'+pct+'%"></div></div><div class="ptxt"><span>'+pct+'% complete</span><span>'+mig+'/'+tot+' migrated</span></div></div>';
+  h+='<div class="ttbs">';
+  [['all',tot],['critical',cr],['important',im],['optional',op],['done',dn]].forEach(([f,c])=>{
+    h+='<button class="ttb'+(tFil===f?' act':'')+'" data-f="'+f+'">'+f[0].toUpperCase()+f.slice(1)+' ('+c+')</button>';
   });
-  const pct = total > 0 ? Math.round((migrated/total)*100) : 0;
-
-  let h = '<div class="tracker-stats">';
-  h += '<div class="t-stat"><div class="t-stat-num">'+total+'</div><div class="t-stat-label">Total</div></div>';
-  h += '<div class="t-stat"><div class="t-stat-num" style="color:var(--green)">'+migrated+'</div><div class="t-stat-label">Migrated</div></div>';
-  h += '<div class="t-stat"><div class="t-stat-num" style="color:var(--orange)">'+inProg+'</div><div class="t-stat-label">In Progress</div></div>';
-  h += '<div class="t-stat"><div class="t-stat-num" style="color:var(--red)">'+pending+'</div><div class="t-stat-label">Not Started</div></div>';
-  h += '</div>';
-  h += '<div class="tracker-bar"><div class="pbar-wrap"><div class="pbar-fill" style="width:'+pct+'%"></div></div>';
-  h += '<div class="pbar-text"><span>'+pct+'% complete</span><span>'+migrated+' / '+total+' migrated</span></div></div>';
-
-  h += '<div class="t-tabs">';
-  [['all',total],['critical',crit],['important',imp],['optional',opt],['done',done]].forEach(([f,c]) => {
-    h += '<button class="t-tab'+(tFil===f?' active':'')+'" data-filter="'+f+'">'+f.charAt(0).toUpperCase()+f.slice(1)+' ('+c+')</button>';
-  });
-  h += '</div><div class="t-list">';
-
-  if (total === 0) {
-    h += '<div class="t-empty"><p style="font-size:20px;margin-bottom:8px">\uD83D\uDD17</p>';
-    h += '<p>No services found yet.</p>';
-    h += '<p style="margin-top:8px;font-size:11px">Complete <strong>Step 2</strong> to scan your Google connections.<br>The userscript syncs data here when you visit this page.</p></div>';
-  } else {
-    let filtered = data;
-    if (tFil==='done') filtered = data.filter(s => tSteps(s.type).every(k => s.steps && s.steps[k]));
-    else if (tFil!=='all') filtered = data.filter(s => s.priority === tFil);
-    const po = {critical:0,important:1,optional:2};
-    filtered.sort((a,b) => {
-      const aD = tSteps(a.type).every(k => a.steps && a.steps[k]);
-      const bD = tSteps(b.type).every(k => b.steps && b.steps[k]);
-      if (aD !== bD) return aD ? 1 : -1;
-      return (po[a.priority]||2) - (po[b.priority]||2);
-    });
-    filtered.forEach(svc => {
-      const steps = tSteps(svc.type);
-      const allDone = steps.every(k => svc.steps && svc.steps[k]);
-      const pc = svc.priority==='critical'?'t-pri-critical':svc.priority==='important'?'t-pri-important':'t-pri-optional';
-      const tc = svc.type==='oauth'?'t-type-oauth':svc.type==='access'?'t-type-access':'t-type-email';
-      const tl = svc.type==='oauth'?'Sign-In':svc.type==='access'?'Access':'Email';
-      h += '<div class="t-item'+(allDone?' t-done':'')+'">';
-      h += '<span class="t-pri '+pc+'">'+esc(svc.priority)+'</span>';
-      h += '<span class="t-name">'+esc(svc.name)+'</span>';
-      h += '<span class="t-type '+tc+'">'+tl+'</span>';
-      h += '<span class="t-steps">';
-      const lb = tLbls(svc.type);
-      steps.forEach(s => { const d = svc.steps && svc.steps[s]; h += '<span class="t-dot'+(d?' done':'')+'" title="'+(lb[s]||s)+'">'+(d?'\u2713':'')+'</span>'; });
-      h += '</span>';
-      if (svc.domain) {
-        const url = svc.domain.startsWith('http') ? svc.domain : 'https://' + svc.domain;
-        h += '<span class="t-links"><a href="'+esc(url)+'" target="_blank" class="t-link">'+esc(svc.domain)+'</a>';
-        if (svc.type==='oauth') h += '<a href="'+esc(url)+'/forgot-password" target="_blank" class="t-link t-link-warn">Reset PW</a>';
-        h += '</span>';
-      }
-      h += '</div>';
+  h+='</div><div class="tls">';
+  if(tot===0){
+    h+='<div class="temp"><p style="font-size:20px;margin-bottom:8px">\uD83D\uDD17</p><p>No services found yet.</p>';
+    h+='<p style="margin-top:8px">Complete <strong>Step 2</strong> to scan your Google connections.<br>The userscript syncs data here when you visit this page.</p></div>';
+  }else{
+    let fl=data;
+    if(tFil==='done')fl=data.filter(s=>tSt(s.type).every(k=>s.steps&&s.steps[k]));
+    else if(tFil!=='all')fl=data.filter(s=>s.priority===tFil);
+    const po={critical:0,important:1,optional:2};
+    fl.sort((a,b)=>{const aD=tSt(a.type).every(k=>a.steps&&a.steps[k]);const bD=tSt(b.type).every(k=>b.steps&&b.steps[k]);if(aD!==bD)return aD?1:-1;return(po[a.priority]||2)-(po[b.priority]||2)});
+    fl.forEach(sv=>{
+      const st=tSt(sv.type);const allDn=st.every(k=>sv.steps&&sv.steps[k]);
+      const pc=sv.priority==='critical'?'tpr-c':sv.priority==='important'?'tpr-i':'tpr-o';
+      const tc=sv.type==='oauth'?'tty-o':sv.type==='access'?'tty-a':'tty-e';
+      const tl=sv.type==='oauth'?'Sign-In':sv.type==='access'?'Access':'Email';
+      h+='<div class="tit'+(allDn?' td':'')+'">';
+      h+='<span class="tpr '+pc+'">'+esc(sv.priority)+'</span>';
+      h+='<span class="tnm">'+esc(sv.name)+'</span>';
+      h+='<span class="tty '+tc+'">'+tl+'</span>';
+      h+='<span class="tdts">';
+      const lb=tLb(sv.type);st.forEach(s=>{const d=sv.steps&&sv.steps[s];h+='<span class="tdt'+(d?' dn':'')+'" title="'+(lb[s]||s)+'">'+(d?'\u2713':'')+'</span>'});
+      h+='</span>';
+      if(sv.domain){const u=sv.domain.startsWith('http')?sv.domain:'https://'+sv.domain;h+='<span class="tlks"><a href="'+esc(u)+'" target="_blank" class="tlk">'+esc(sv.domain)+'</a>';if(sv.type==='oauth')h+='<a href="'+esc(u)+'/forgot-password" target="_blank" class="tlk tlkw">Reset PW</a>';h+='</span>'}
+      h+='</div>';
     });
   }
-  h += '</div>';
-  h += '<div class="t-actions">';
-  h += '<button class="btn btn-ghost" id="t-csv" style="font-size:10px;padding:6px 12px">Export CSV</button>';
-  h += '<button class="btn btn-ghost" id="t-json" style="font-size:10px;padding:6px 12px">Export JSON</button>';
-  h += '<button class="btn btn-ghost" id="t-imp" style="font-size:10px;padding:6px 12px">Import JSON</button>';
-  h += '<input type="file" id="t-imp-f" accept=".json" style="display:none">';
-  if (total > 0) h += '<button class="btn btn-ghost" id="t-clr" style="font-size:10px;padding:6px 12px;margin-left:auto;color:var(--red)">Clear Data</button>';
-  h += '</div>';
+  h+='</div><div class="tact">';
+  h+='<button class="btn bg" id="tc" style="font-size:10px;padding:6px 12px">Export CSV</button>';
+  h+='<button class="btn bg" id="tj" style="font-size:10px;padding:6px 12px">Export JSON</button>';
+  h+='<button class="btn bg" id="ti" style="font-size:10px;padding:6px 12px">Import JSON</button>';
+  h+='<input type="file" id="tif" accept=".json" style="display:none">';
+  h+='<button class="btn bg" id="tmd" style="font-size:10px;padding:6px 12px">Export Markdown Plan</button>';
+  if(tot>0)h+='<button class="btn bg" id="tcl" style="font-size:10px;padding:6px 12px;margin-left:auto;color:var(--red)">Clear</button>';
+  h+='</div>';
   return h;
 }
 
-function wireTracker() {
-  document.querySelectorAll('.t-tab').forEach(t => { t.addEventListener('click', () => { tFil = t.dataset.filter; render(); }); });
-  const csv = document.getElementById('t-csv');
-  if (csv) csv.addEventListener('click', () => {
-    const d = loadT(); if (!d.length) return;
-    let c = 'Name,Type,Priority,Domain,Status\n';
-    d.forEach(s => {
-      const st = tSteps(s.type); const dn = st.filter(k => s.steps && s.steps[k]).length;
-      c += '"'+s.name.replace(/"/g,'""')+'",'+s.type+','+s.priority+',"'+(s.domain||'')+'",'+(dn===st.length?'Complete':dn>0?'In Progress':'Not Started')+'\n';
-    });
+function wireTrk(){
+  document.querySelectorAll('.ttb').forEach(t=>{t.addEventListener('click',()=>{tFil=t.dataset.f;render()})});
+  const tc=document.getElementById('tc');if(tc)tc.addEventListener('click',()=>{
+    const d=ldT();if(!d.length)return;let c='Name,Type,Priority,Domain,Status\n';
+    d.forEach(s=>{const st=tSt(s.type);const dn=st.filter(k=>s.steps&&s.steps[k]).length;
+    c+='"'+s.name.replace(/"/g,'""')+'",'+s.type+','+s.priority+',"'+(s.domain||'')+'",'+(dn===st.length?'Complete':dn>0?'In Progress':'Not Started')+'\n'});
     dl(c,'text/csv','degoogler-services.csv');
   });
-  const json = document.getElementById('t-json');
-  if (json) json.addEventListener('click', () => dl(JSON.stringify(loadT(),null,2),'application/json','degoogler-services.json'));
-  const imp = document.getElementById('t-imp');
-  if (imp) imp.addEventListener('click', () => document.getElementById('t-imp-f').click());
-  const impF = document.getElementById('t-imp-f');
-  if (impF) impF.addEventListener('change', e => {
-    const f = e.target.files[0]; if (!f) return;
-    const r = new FileReader();
-    r.onload = () => { try { const d = JSON.parse(r.result); if (Array.isArray(d)){saveT(d);render();} } catch{} };
-    r.readAsText(f); e.target.value = '';
+  const tj=document.getElementById('tj');if(tj)tj.addEventListener('click',()=>dl(JSON.stringify(ldT(),null,2),'application/json','degoogler-services.json'));
+  const ti=document.getElementById('ti');if(ti)ti.addEventListener('click',()=>document.getElementById('tif').click());
+  const tif=document.getElementById('tif');if(tif)tif.addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;const r=new FileReader();
+    r.onload=()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){svT(d);render()}}catch{}};
+    r.readAsText(f);e.target.value='';
   });
-  const clr = document.getElementById('t-clr');
-  if (clr) clr.addEventListener('click', () => { localStorage.removeItem(TK); render(); });
+  const tcl=document.getElementById('tcl');if(tcl)tcl.addEventListener('click',()=>{localStorage.removeItem(TK);render()});
+  const tmd=document.getElementById('tmd');if(tmd)tmd.addEventListener('click',exportMd);
 }
 
-function dl(c,t,n) { const b = new Blob([c],{type:t}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = n; a.click(); }
-
-function copyText(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    const t = document.createElement('div'); t.className = 'toast'; t.textContent = 'Copied!';
-    document.body.appendChild(t); setTimeout(() => t.remove(), 1500);
-  });
+// ── Markdown Export ──
+function exportMd(){
+  const data=ldT();
+  let md='# DeGoogler Migration Plan\n\nGenerated by DeGoogler v0.0.5\n\n';
+  md+='## Phase 1: Backup & Export\n\n';
+  md+='- [ ] Go to https://takeout.google.com and start a full export\n';
+  md+='- [ ] Download all Takeout archive files\n';
+  md+='- [ ] Export Chrome passwords (chrome://settings/passwords)\n';
+  md+='- [ ] Export Chrome bookmarks\n';
+  md+='\n## Phase 2: Process Data (PowerShell Toolkit)\n\n';
+  md+='- [ ] Extract Takeout archives\n- [ ] Restore Google Photos metadata\n- [ ] Convert Chrome passwords\n- [ ] Process Gmail MBOX (if needed)\n- [ ] Clean Google Contacts (if needed)\n';
+  md+='\n## Phase 3: Create New Accounts\n\n';
+  md+='- [ ] Set up password manager (Bitwarden / Proton Pass)\n- [ ] Create primary email (Proton Mail / Tuta / Fastmail)\n- [ ] Import data into new services\n';
+  md+='\n## Phase 4: Connected Services Migration\n\n';
+  if(data.length>0){
+    const crit=data.filter(s=>s.priority==='critical');
+    const imp=data.filter(s=>s.priority==='important');
+    const opt=data.filter(s=>s.priority==='optional');
+    if(crit.length){md+='**Critical**\n';crit.forEach(s=>{const st=tSt(s.type);const dn=st.every(k=>s.steps&&s.steps[k]);md+='- ['+(dn?'x':' ')+'] '+s.name+(s.domain?' ('+s.domain+')':'')+' ['+s.type+']\n'});md+='\n'}
+    if(imp.length){md+='**Important**\n';imp.forEach(s=>{const st=tSt(s.type);const dn=st.every(k=>s.steps&&s.steps[k]);md+='- ['+(dn?'x':' ')+'] '+s.name+(s.domain?' ('+s.domain+')':'')+' ['+s.type+']\n'});md+='\n'}
+    if(opt.length){md+='**Optional**\n';opt.forEach(s=>{const st=tSt(s.type);const dn=st.every(k=>s.steps&&s.steps[k]);md+='- ['+(dn?'x':' ')+'] '+s.name+(s.domain?' ('+s.domain+')':'')+' ['+s.type+']\n'});md+='\n'}
+  }else md+='_No connected services scanned yet. Use the Browser Assistant to scan._\n\n';
+  md+='## Phase 5: Transition\n\n';
+  md+='- [ ] Set up Gmail forwarding\n- [ ] Set Gmail auto-reply\n- [ ] Re-enroll all 2FA tokens\n- [ ] Run parallel for 2-4 weeks\n';
+  md+='\n## Phase 6: Final Cutover\n\n';
+  md+='- [ ] Verify all data migrated\n- [ ] Revoke all third-party access\n- [ ] (Optional) Delete Google services data\n- [ ] (Optional) Delete Google account\n';
+  dl(md,'text/markdown','degoogler-migration-plan.md');
 }
 
-// ── Userscript bridge ──
-window.addEventListener('message', e => {
-  if (e.data && e.data.type === 'degoogler-sync') {
-    const svcs = e.data.services;
-    if (Array.isArray(svcs) && svcs.length > 0) { saveT(svcs); if (cur === 6) render(); else renderSidebar(); }
-  }
+function dl(c,t,n){const b=new Blob([c],{type:t});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();URL.revokeObjectURL(a.href)}
+function cpy(t){navigator.clipboard.writeText(t).then(()=>{const e=document.createElement('div');e.className='toast';e.textContent='Copied!';document.body.appendChild(e);setTimeout(()=>e.remove(),1500)})}
+
+// ── Userscript Sync Bridge ──
+window.addEventListener('message',e=>{
+  if(e.data&&e.data.type==='degoogler-sync'){const s=e.data.services;if(Array.isArray(s)&&s.length>0){svT(s);if(cur===6)render();else renderSB()}}
 });
-function checkInj() {
-  const el = document.getElementById('degoogler-userscript-data');
-  if (el) { try { const d = JSON.parse(el.textContent); if (Array.isArray(d) && d.length > 0){saveT(d);render();} } catch{} }
-}
-let polls = 0; const pi = setInterval(() => { checkInj(); if (++polls > 20) clearInterval(pi); }, 500);
+function chkInj(){const el=document.getElementById('degoogler-userscript-data');if(el){try{const d=JSON.parse(el.textContent);if(Array.isArray(d)&&d.length>0){svT(d);render()}}catch{}}}
+let polls=0;const pi=setInterval(()=>{chkInj();if(++polls>20)clearInterval(pi)},500);
 
 render();
 </script>
