@@ -8,8 +8,6 @@
 
 > A turnkey migration toolkit for leaving Google services behind. Interactive wizard, desktop data processor, and browser automation — everything a normal person needs to fully degoogle.
 
-![Screenshot](screenshot.png)
-
 ## What Is This?
 
 DeGoogler is a three-part toolkit that walks anyone through the process of migrating away from Google services:
