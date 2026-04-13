@@ -2,6 +2,8 @@
 // @name         DeGoogler Browser Assistant
 // @namespace    https://github.com/SysAdminDoc
 // @version      0.0.5
+// @updateURL      https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-BrowserAssistant.user.js
+// @downloadURL    https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-BrowserAssistant.user.js
 // @description  Automates Google Takeout selection, exports YouTube subscriptions, audits connected apps/OAuth services, tracks migration of every account tied to your Google login, and assists with Gmail forwarding setup during the degoogling process.
 // @author       SysAdminDoc
 // @match        https://takeout.google.com/*
