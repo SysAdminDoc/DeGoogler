@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    DeGoogler Toolkit v0.0.1 - Google Data Migration & Processing Suite
+    DeGoogler Toolkit v0.0.2 - Google Data Migration & Processing Suite
 .DESCRIPTION
     Turnkey PowerShell WPF application that handles:
     - Google Takeout archive extraction and organization
@@ -10,10 +10,13 @@
     - MBOX email processing and conversion to EML
     - Chrome bookmark conversion for Firefox/Brave
     - Google Contacts vCard processing
+    Features:
+    - Dry-Run mode on every tool (reports planned actions without writing)
+    - Structured JSONL logging to %LOCALAPPDATA%\DeGoogler\logs\
 .AUTHOR
     SysAdminDoc
 .VERSION
-    0.0.1
+    0.0.2
 #>
 
 # ── Auto-elevate ──
@@ -64,11 +67,38 @@ function Install-ExifTool {
     return $null
 }
 
+# ── Structured JSONL Logging ──
+$script:logDir = Join-Path $env:LOCALAPPDATA "DeGoogler\logs"
+if (-not (Test-Path $script:logDir)) { New-Item -ItemType Directory -Path $script:logDir -Force | Out-Null }
+$script:logFile = Join-Path $script:logDir ("toolkit_{0}.jsonl" -f (Get-Date -Format 'yyyy-MM-dd'))
+
+function Write-JsonLog {
+    param(
+        [string]$Tool,
+        [string]$Action,
+        [string]$Message,
+        [string]$Level = "INFO",
+        [hashtable]$Data = @{}
+    )
+    $entry = @{
+        ts      = (Get-Date -Format 'o')
+        tool    = $Tool
+        action  = $Action
+        msg     = $Message
+        level   = $Level
+    }
+    if ($Data.Count -gt 0) { $entry.data = $Data }
+    try {
+        $json = $entry | ConvertTo-Json -Compress -Depth 4
+        [System.IO.File]::AppendAllText($script:logFile, "$json`n", [System.Text.Encoding]::UTF8)
+    } catch {}
+}
+
 # ── XAML UI ──
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="DeGoogler Toolkit v0.0.1" Width="920" Height="720"
+        Title="DeGoogler Toolkit v0.0.2" Width="920" Height="720"
         WindowStartupLocation="CenterScreen" Background="#1a1a2e"
         FontFamily="Segoe UI" ResizeMode="CanResizeWithGrip">
     <Window.Resources>
@@ -164,7 +194,7 @@ $xaml = @'
                     </Border>
                     <TextBlock Text="DeGoogler Toolkit" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
                     <Border Background="#252536" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="v0.0.1" FontSize="10" Foreground="#888"/>
+                        <TextBlock Text="v0.0.2" FontSize="10" Foreground="#888"/>
                     </Border>
                 </StackPanel>
                 <TextBlock Grid.Column="2" Text="Your data stays on your machine" FontSize="11" Foreground="#666" VerticalAlignment="Center"/>
@@ -207,7 +237,8 @@ $xaml = @'
                         <TextBox x:Name="txtTakeoutOutput" IsReadOnly="True" Text="Select output folder..." Foreground="#666"/>
                         <Button x:Name="btnTakeoutOutputBrowse" Grid.Column="1" Content="Browse" Margin="8,0,0,0"/>
                     </Grid>
-                    <CheckBox x:Name="chkTakeoutDeleteZips" Content="Delete original ZIP files after extraction" Margin="0,0,0,12"/>
+                    <CheckBox x:Name="chkTakeoutDeleteZips" Content="Delete original ZIP files after extraction" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="chkTakeoutDryRun" Content="Dry Run — preview actions without writing" Margin="0,0,0,12" Foreground="#f59e0b"/>
                     <Button x:Name="btnTakeoutRun" Content="Extract and Organize" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
@@ -226,7 +257,8 @@ $xaml = @'
                     </Grid>
                     <CheckBox x:Name="chkPhotosDeleteJson" Content="Delete JSON sidecar files after merging" Margin="0,0,0,8"/>
                     <CheckBox x:Name="chkPhotosFixDates" Content="Set file system dates to match photo dates" IsChecked="True" Margin="0,0,0,8"/>
-                    <CheckBox x:Name="chkPhotosRecursive" Content="Process subfolders recursively" IsChecked="True" Margin="0,0,0,12"/>
+                    <CheckBox x:Name="chkPhotosRecursive" Content="Process subfolders recursively" IsChecked="True" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="chkPhotosDryRun" Content="Dry Run — preview actions without writing" Margin="0,0,0,12" Foreground="#f59e0b"/>
                     <TextBlock x:Name="lblPhotosExiftool" Text="ExifTool: Checking..." Foreground="#f59e0b" FontSize="11" Margin="0,0,0,12"/>
                     <Button x:Name="btnPhotosRun" Content="Restore Photo Metadata" HorizontalAlignment="Left"/>
                 </StackPanel>
@@ -256,7 +288,8 @@ $xaml = @'
                             <ComboBoxItem Content="Proton Pass (CSV)"/>
                         </ComboBox>
                     </StackPanel>
-                    <CheckBox x:Name="chkPasswordsSecureDelete" Content="Securely overwrite source CSV after conversion" Margin="0,0,0,12"/>
+                    <CheckBox x:Name="chkPasswordsSecureDelete" Content="Securely overwrite source CSV after conversion" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="chkPasswordsDryRun" Content="Dry Run — preview actions without writing" Margin="0,0,0,12" Foreground="#f59e0b"/>
                     <Button x:Name="btnPasswordsRun" Content="Convert Passwords" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
@@ -280,7 +313,8 @@ $xaml = @'
                         <TextBox x:Name="txtEmailOutput" IsReadOnly="True" Text="Select output folder for EML files..." Foreground="#666"/>
                         <Button x:Name="btnEmailOutputBrowse" Grid.Column="1" Content="Browse" Margin="8,0,0,0"/>
                     </Grid>
-                    <CheckBox x:Name="chkEmailPreserveLabels" Content="Create subfolders from Gmail labels" IsChecked="True" Margin="0,0,0,12"/>
+                    <CheckBox x:Name="chkEmailPreserveLabels" Content="Create subfolders from Gmail labels" IsChecked="True" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="chkEmailDryRun" Content="Dry Run — preview actions without writing" Margin="0,0,0,12" Foreground="#f59e0b"/>
                     <Button x:Name="btnEmailRun" Content="Process MBOX" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
@@ -301,6 +335,7 @@ $xaml = @'
                         <Button x:Name="btnBookmarksBrowse" Grid.Column="1" Content="Browse" Margin="8,0,0,0"/>
                         <Button x:Name="btnBookmarksDetect" Grid.Column="2" Content="Auto-Detect" Margin="8,0,0,0" Background="#333"/>
                     </Grid>
+                    <CheckBox x:Name="chkBookmarksDryRun" Content="Dry Run — preview actions without writing" Margin="0,0,0,12" Foreground="#f59e0b"/>
                     <Button x:Name="btnBookmarksRun" Content="Convert Bookmarks" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
@@ -318,7 +353,8 @@ $xaml = @'
                         <Button x:Name="btnContactsBrowse" Grid.Column="1" Content="Browse" Margin="8,0,0,0"/>
                     </Grid>
                     <CheckBox x:Name="chkContactsDedup" Content="Remove duplicate contacts" IsChecked="True" Margin="0,0,0,8"/>
-                    <CheckBox x:Name="chkContactsClean" Content="Clean formatting (standardize phone numbers, fix encoding)" IsChecked="True" Margin="0,0,0,12"/>
+                    <CheckBox x:Name="chkContactsClean" Content="Clean formatting (standardize phone numbers, fix encoding)" IsChecked="True" Margin="0,0,0,8"/>
+                    <CheckBox x:Name="chkContactsDryRun" Content="Dry Run — preview actions without writing" Margin="0,0,0,12" Foreground="#f59e0b"/>
                     <Button x:Name="btnContactsRun" Content="Process Contacts" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
@@ -351,12 +387,12 @@ $controls = @{}
 $controlNames = @(
     'btnTabTakeout','btnTabPhotos','btnTabPasswords','btnTabEmail','btnTabBookmarks','btnTabContacts',
     'tabTakeout','tabPhotos','tabPasswords','tabEmail','tabBookmarks','tabContacts',
-    'txtTakeoutInput','btnTakeoutBrowse','txtTakeoutOutput','btnTakeoutOutputBrowse','chkTakeoutDeleteZips','btnTakeoutRun',
-    'txtPhotosInput','btnPhotosBrowse','chkPhotosDeleteJson','chkPhotosFixDates','chkPhotosRecursive','lblPhotosExiftool','btnPhotosRun',
-    'txtPasswordsInput','btnPasswordsBrowse','cmbPasswordsFormat','chkPasswordsSecureDelete','btnPasswordsRun',
-    'txtEmailInput','btnEmailBrowse','txtEmailOutput','btnEmailOutputBrowse','chkEmailPreserveLabels','btnEmailRun',
-    'txtBookmarksInput','btnBookmarksBrowse','btnBookmarksDetect','btnBookmarksRun',
-    'txtContactsInput','btnContactsBrowse','chkContactsDedup','chkContactsClean','btnContactsRun',
+    'txtTakeoutInput','btnTakeoutBrowse','txtTakeoutOutput','btnTakeoutOutputBrowse','chkTakeoutDeleteZips','chkTakeoutDryRun','btnTakeoutRun',
+    'txtPhotosInput','btnPhotosBrowse','chkPhotosDeleteJson','chkPhotosFixDates','chkPhotosRecursive','chkPhotosDryRun','lblPhotosExiftool','btnPhotosRun',
+    'txtPasswordsInput','btnPasswordsBrowse','cmbPasswordsFormat','chkPasswordsSecureDelete','chkPasswordsDryRun','btnPasswordsRun',
+    'txtEmailInput','btnEmailBrowse','txtEmailOutput','btnEmailOutputBrowse','chkEmailPreserveLabels','chkEmailDryRun','btnEmailRun',
+    'txtBookmarksInput','btnBookmarksBrowse','btnBookmarksDetect','chkBookmarksDryRun','btnBookmarksRun',
+    'txtContactsInput','btnContactsBrowse','chkContactsDedup','chkContactsClean','chkContactsDryRun','btnContactsRun',
     'progressBar','lblProgress','txtLog'
 )
 foreach ($name in $controlNames) {
@@ -504,11 +540,25 @@ $controls['btnTakeoutRun'].Add_Click({
     }
 
     $deleteZips = $controls['chkTakeoutDeleteZips'].IsChecked
+    $dryRun = $controls['chkTakeoutDryRun'].IsChecked
     $files = $script:takeoutFiles
-    $logAction = ${function:Write-Log}
-    $progressAction = ${function:Set-Progress}
+
+    if ($dryRun) {
+        Write-Log "[DRY RUN] Takeout Extractor - no files will be written" "WARN"
+        Write-JsonLog -Tool "TakeoutExtractor" -Action "DryRun" -Message "Dry run started" -Level "INFO" -Data @{ archiveCount = $files.Count; outputDir = $outputDir }
+        Write-Log "[DRY RUN] Would extract $($files.Count) archive(s) to: $outputDir"
+        foreach ($file in $files) {
+            $size = [math]::Round((Get-Item $file).Length / 1MB, 1)
+            Write-Log "[DRY RUN]   Archive: $([System.IO.Path]::GetFileName($file)) (${size} MB)"
+        }
+        if ($deleteZips) { Write-Log "[DRY RUN] Would DELETE original ZIP files after extraction" "WARN" }
+        Write-Log "[DRY RUN] Dry run complete. No files were modified." "OK"
+        Set-Progress 100 "Dry Run Complete"
+        return
+    }
 
     Write-Log "Starting extraction of $($files.Count) archive(s)..."
+    Write-JsonLog -Tool "TakeoutExtractor" -Action "Start" -Message "Extraction started" -Level "INFO" -Data @{ archiveCount = $files.Count; outputDir = $outputDir }
     Set-Progress 0 "Extracting..."
 
     $controls['btnTakeoutRun'].IsEnabled = $false
@@ -560,6 +610,7 @@ $controls['btnTakeoutRun'].Add_Click({
             $services = $result | Where-Object { $_ -notmatch '^ERROR' } | Select-Object -Unique
             Write-Log "Extraction complete. Found services: $($services -join ', ')" "OK"
             Write-Log "Output folder: $($controls['txtTakeoutOutput'].Text)" "OK"
+            Write-JsonLog -Tool "TakeoutExtractor" -Action "Complete" -Message "Extraction finished" -Level "OK" -Data @{ services = ($services -join ',') }
         }
         # Open output folder
         $outPath = $controls['txtTakeoutOutput'].Text
@@ -603,8 +654,32 @@ $controls['btnPhotosRun'].Add_Click({
     $deleteJson = $controls['chkPhotosDeleteJson'].IsChecked
     $fixDates = $controls['chkPhotosFixDates'].IsChecked
     $recursive = $controls['chkPhotosRecursive'].IsChecked
+    $dryRun = $controls['chkPhotosDryRun'].IsChecked
+
+    if ($dryRun) {
+        Write-Log "[DRY RUN] Photos Metadata Restorer - no files will be modified" "WARN"
+        $searchOpt = if ($recursive) { 'AllDirectories' } else { 'TopDirectoryOnly' }
+        $extensions = @('*.jpg','*.jpeg','*.png','*.gif','*.mp4','*.mov','*.heic','*.webp','*.tiff','*.bmp')
+        $mediaCount = (Get-ChildItem -Path $photosDir -Recurse:$recursive -Include $extensions -ErrorAction SilentlyContinue).Count
+        $jsonCount = (Get-ChildItem -Path $photosDir -Recurse:$recursive -Filter "*.json" -ErrorAction SilentlyContinue).Count
+        Write-Log "[DRY RUN] Would process $mediaCount media files with $jsonCount JSON sidecars"
+        Write-Log "[DRY RUN] Source folder: $photosDir"
+        Write-Log "[DRY RUN] Fix dates: $fixDates | Delete JSON: $deleteJson | Recursive: $recursive"
+        $exifPath = Join-Path $env:LOCALAPPDATA "DeGoogler\exiftool.exe"
+        if (Test-Path $exifPath) {
+            Write-Log "[DRY RUN] ExifTool found - would write EXIF metadata directly"
+        } else {
+            Write-Log "[DRY RUN] ExifTool not found - would only fix file system dates"
+        }
+        if ($deleteJson) { Write-Log "[DRY RUN] Would DELETE $jsonCount JSON sidecar files after merging" "WARN" }
+        Write-Log "[DRY RUN] Dry run complete. No files were modified." "OK"
+        Write-JsonLog -Tool "PhotosMetadata" -Action "DryRun" -Message "Dry run" -Level "INFO" -Data @{ mediaCount = $mediaCount; jsonCount = $jsonCount }
+        Set-Progress 100 "Dry Run Complete"
+        return
+    }
 
     Write-Log "Starting photo metadata restoration..."
+    Write-JsonLog -Tool "PhotosMetadata" -Action "Start" -Message "Processing started" -Level "INFO" -Data @{ photosDir = $photosDir }
     Set-Progress 0 "Processing photos..."
     $controls['btnPhotosRun'].IsEnabled = $false
 
@@ -668,16 +743,16 @@ $controls['btnPhotosRun'].Add_Click({
 
                 if ($useExif -and $photoTaken) {
                     $dateStr = $photoTaken.ToString('yyyy:MM:dd HH:mm:ss')
-                    $args = @("-overwrite_original", "-DateTimeOriginal=`"$dateStr`"", "-CreateDate=`"$dateStr`"", "-ModifyDate=`"$dateStr`"")
+                    $exifArgs = @("-overwrite_original", "-DateTimeOriginal=`"$dateStr`"", "-CreateDate=`"$dateStr`"", "-ModifyDate=`"$dateStr`"")
                     if ($geoLat -and $geoLat -ne 0) {
                         $latRef = if ($geoLat -ge 0) { "N" } else { "S" }
                         $lonRef = if ($geoLon -ge 0) { "E" } else { "W" }
-                        $args += "-GPSLatitude=$([Math]::Abs($geoLat))", "-GPSLatitudeRef=$latRef"
-                        $args += "-GPSLongitude=$([Math]::Abs($geoLon))", "-GPSLongitudeRef=$lonRef"
+                        $exifArgs += "-GPSLatitude=$([Math]::Abs($geoLat))", "-GPSLatitudeRef=$latRef"
+                        $exifArgs += "-GPSLongitude=$([Math]::Abs($geoLon))", "-GPSLongitudeRef=$lonRef"
                     }
-                    if ($desc) { $args += "-ImageDescription=`"$desc`"" }
-                    $args += "`"$mediaFile`""
-                    & $exifPath @args 2>$null | Out-Null
+                    if ($desc) { $exifArgs += "-ImageDescription=`"$desc`"" }
+                    $exifArgs += "`"$mediaFile`""
+                    & $exifPath @exifArgs 2>$null | Out-Null
                     $fixed++
                 } elseif ($photoTaken -and $fixDates) {
                     # Fallback: at least fix file system dates
@@ -702,6 +777,7 @@ $controls['btnPhotosRun'].Add_Click({
         if ($result -and $result.Count -gt 0) {
             $r = $result[0]
             Write-Log "Photo metadata restoration complete: $($r.Fixed) fixed / $($r.Total) total / $($r.Failed) failed" "OK"
+            Write-JsonLog -Tool "PhotosMetadata" -Action "Complete" -Message "Processing finished" -Level "OK" -Data @{ total = $r.Total; fixed = $r.Fixed; failed = $r.Failed }
         }
     }
 })
@@ -728,12 +804,28 @@ $controls['btnPasswordsRun'].Add_Click({
 
     $formatIdx = $controls['cmbPasswordsFormat'].SelectedIndex
     $secureDelete = $controls['chkPasswordsSecureDelete'].IsChecked
+    $dryRun = $controls['chkPasswordsDryRun'].IsChecked
 
     $formatName = switch ($formatIdx) { 0 { "Bitwarden" } 1 { "KeePass" } 2 { "1Password" } 3 { "ProtonPass" } default { "Bitwarden" } }
+
+    if ($dryRun) {
+        Write-Log "[DRY RUN] Password Converter - no files will be written" "WARN"
+        $rows = Import-Csv $inputFile
+        Write-Log "[DRY RUN] Source: $([System.IO.Path]::GetFileName($inputFile)) ($($rows.Count) entries)"
+        Write-Log "[DRY RUN] Target format: $formatName"
+        Write-Log "[DRY RUN] Would convert $($rows.Count) passwords to $formatName CSV"
+        if ($secureDelete) { Write-Log "[DRY RUN] Would SECURELY DELETE source CSV after conversion" "WARN" }
+        Write-Log "[DRY RUN] Dry run complete. No files were modified." "OK"
+        Write-JsonLog -Tool "PasswordConverter" -Action "DryRun" -Message "Dry run" -Level "INFO" -Data @{ entryCount = $rows.Count; format = $formatName }
+        Set-Progress 100 "Dry Run Complete"
+        return
+    }
+
     $savePath = Get-SaveDialog -Filter "CSV Files (*.csv)|*.csv" -Title "Save $formatName CSV" -DefaultName "${formatName}_import.csv"
     if (-not $savePath) { return }
 
     Write-Log "Converting to $formatName format..."
+    Write-JsonLog -Tool "PasswordConverter" -Action "Start" -Message "Conversion started" -Level "INFO" -Data @{ format = $formatName }
     Set-Progress 0 "Converting..."
 
     try {
@@ -776,6 +868,7 @@ $controls['btnPasswordsRun'].Add_Click({
         $output | Export-Csv -Path $savePath -NoTypeInformation -Encoding UTF8
         Write-Log "Converted $($rows.Count) passwords to $formatName format" "OK"
         Write-Log "Saved to: $savePath" "OK"
+        Write-JsonLog -Tool "PasswordConverter" -Action "Complete" -Message "Conversion finished" -Level "OK" -Data @{ count = $rows.Count; format = $formatName }
 
         if ($secureDelete) {
             $bytes = [System.IO.File]::ReadAllBytes($inputFile)
@@ -786,11 +879,13 @@ $controls['btnPasswordsRun'].Add_Click({
             [System.IO.File]::WriteAllBytes($inputFile, $bytes)
             Remove-Item $inputFile -Force
             Write-Log "Source CSV securely overwritten and deleted" "OK"
+            Write-JsonLog -Tool "PasswordConverter" -Action "SecureDelete" -Message "Source CSV deleted" -Level "OK"
         }
 
         Set-Progress 100 "Done"
     } catch {
         Write-Log "Error converting passwords: $_" "ERROR"
+        Write-JsonLog -Tool "PasswordConverter" -Action "Error" -Message "$_" -Level "ERROR"
         Set-Progress 0 ""
     }
 })
@@ -831,7 +926,25 @@ $controls['btnEmailRun'].Add_Click({
     if (-not (Test-Path $outputDir)) { New-Item -ItemType Directory -Path $outputDir -Force | Out-Null }
 
     $preserveLabels = $controls['chkEmailPreserveLabels'].IsChecked
+    $dryRun = $controls['chkEmailDryRun'].IsChecked
+
+    if ($dryRun) {
+        Write-Log "[DRY RUN] Email MBOX Processor - no files will be written" "WARN"
+        $size = [math]::Round((Get-Item $inputFile).Length / 1MB, 1)
+        Write-Log "[DRY RUN] Source: $([System.IO.Path]::GetFileName($inputFile)) (${size} MB)"
+        Write-Log "[DRY RUN] Output folder: $outputDir"
+        Write-Log "[DRY RUN] Preserve labels as subfolders: $preserveLabels"
+        # Quick scan to count emails
+        $fromCount = (Select-String -Path $inputFile -Pattern '^From ' -SimpleMatch | Measure-Object).Count
+        Write-Log "[DRY RUN] Would extract ~$fromCount emails to individual EML files"
+        Write-Log "[DRY RUN] Dry run complete. No files were modified." "OK"
+        Write-JsonLog -Tool "MboxProcessor" -Action "DryRun" -Message "Dry run" -Level "INFO" -Data @{ emailCount = $fromCount; sizeMB = $size }
+        Set-Progress 100 "Dry Run Complete"
+        return
+    }
+
     Write-Log "Processing MBOX file..."
+    Write-JsonLog -Tool "MboxProcessor" -Action "Start" -Message "Processing started" -Level "INFO" -Data @{ inputFile = $inputFile }
     Set-Progress 0 "Processing..."
     $controls['btnEmailRun'].IsEnabled = $false
 
@@ -943,10 +1056,38 @@ $controls['btnBookmarksRun'].Add_Click({
         Write-Log "No bookmarks file selected" "WARN"; return
     }
 
+    $dryRun = $controls['chkBookmarksDryRun'].IsChecked
+
+    if ($dryRun) {
+        Write-Log "[DRY RUN] Bookmark Converter - no files will be written" "WARN"
+        $content = Get-Content $inputFile -Raw
+        $isJson = $content.TrimStart().StartsWith('{')
+        Write-Log "[DRY RUN] Source: $([System.IO.Path]::GetFileName($inputFile))"
+        Write-Log "[DRY RUN] Format detected: $(if ($isJson) { 'Chrome JSON' } else { 'HTML (already Netscape format)' })"
+        if ($isJson) {
+            $json = $content | ConvertFrom-Json
+            $bookmarkCount = 0
+            function Count-BookmarkNodes($node) {
+                if ($node.type -eq 'url') { $script:bmCount++ }
+                if ($node.children) { foreach ($c in $node.children) { Count-BookmarkNodes $c } }
+            }
+            $script:bmCount = 0
+            @($json.roots.bookmark_bar, $json.roots.other, $json.roots.synced) | Where-Object { $_ -and $_.children } | ForEach-Object { Count-BookmarkNodes $_ }
+            Write-Log "[DRY RUN] Would convert $($script:bmCount) bookmarks to Netscape HTML format"
+        } else {
+            Write-Log "[DRY RUN] File is already HTML - would copy as-is"
+        }
+        Write-Log "[DRY RUN] Dry run complete. No files were modified." "OK"
+        Write-JsonLog -Tool "BookmarkConverter" -Action "DryRun" -Message "Dry run" -Level "INFO"
+        Set-Progress 100 "Dry Run Complete"
+        return
+    }
+
     $savePath = Get-SaveDialog -Filter "HTML Bookmark File (*.html)|*.html" -Title "Save Bookmarks HTML" -DefaultName "bookmarks_export.html"
     if (-not $savePath) { return }
 
     Write-Log "Converting bookmarks..."
+    Write-JsonLog -Tool "BookmarkConverter" -Action "Start" -Message "Conversion started" -Level "INFO"
 
     try {
         $content = Get-Content $inputFile -Raw
@@ -1033,11 +1174,25 @@ $controls['btnContactsRun'].Add_Click({
 
     $dedup = $controls['chkContactsDedup'].IsChecked
     $clean = $controls['chkContactsClean'].IsChecked
+    $dryRun = $controls['chkContactsDryRun'].IsChecked
+
+    if ($dryRun) {
+        Write-Log "[DRY RUN] Contacts Processor - no files will be written" "WARN"
+        $vcardCount = (Get-Content $inputFile | Select-String -Pattern '^BEGIN:VCARD' -AllMatches).Count
+        Write-Log "[DRY RUN] Source: $([System.IO.Path]::GetFileName($inputFile)) ($vcardCount contacts)"
+        Write-Log "[DRY RUN] Deduplication: $dedup | Clean formatting: $clean"
+        Write-Log "[DRY RUN] Would process $vcardCount contacts"
+        Write-Log "[DRY RUN] Dry run complete. No files were modified." "OK"
+        Write-JsonLog -Tool "ContactsProcessor" -Action "DryRun" -Message "Dry run" -Level "INFO" -Data @{ contactCount = $vcardCount }
+        Set-Progress 100 "Dry Run Complete"
+        return
+    }
 
     $savePath = Get-SaveDialog -Filter "vCard Files (*.vcf)|*.vcf" -Title "Save Processed Contacts" -DefaultName "contacts_cleaned.vcf"
     if (-not $savePath) { return }
 
     Write-Log "Processing contacts..."
+    Write-JsonLog -Tool "ContactsProcessor" -Action "Start" -Message "Processing started" -Level "INFO"
     Set-Progress 0 "Processing..."
 
     try {
