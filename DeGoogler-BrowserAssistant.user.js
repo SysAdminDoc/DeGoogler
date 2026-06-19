@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DeGoogler Browser Assistant
 // @namespace    https://github.com/SysAdminDoc
-// @version      0.0.5
+// @version      0.0.6
 // @updateURL      https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-BrowserAssistant.user.js
 // @downloadURL    https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-BrowserAssistant.user.js
 // @description  Automates Google Takeout selection, exports YouTube subscriptions, audits connected apps/OAuth services, tracks migration of every account tied to your Google login, and assists with Gmail forwarding setup during the degoogling process.
@@ -474,9 +474,34 @@
         });
     }
 
+    // ── Shadow-DOM host for style isolation ──
+    // Each panel is wrapped in a shadow root so Google CSS cannot interfere.
+    let _shadowHost = null;
+    let _shadowRoot = null;
+
+    // Shadow-DOM-aware element lookup
+    function dgById(id) {
+        return _shadowRoot ? _shadowRoot.getElementById(id) : document.getElementById(id);
+    }
+
+    function getShadowRoot() {
+        if (_shadowRoot) return _shadowRoot;
+        _shadowHost = document.createElement('div');
+        _shadowHost.id = 'degoogler-shadow-host';
+        _shadowHost.style.cssText = 'all:initial;position:fixed;top:0;right:0;z-index:999998;pointer-events:none;';
+        document.body.appendChild(_shadowHost);
+        _shadowRoot = _shadowHost.attachShadow({ mode: 'open' });
+        // Inject styles into shadow root
+        const style = document.createElement('style');
+        style.textContent = STYLES;
+        _shadowRoot.appendChild(style);
+        return _shadowRoot;
+    }
+
     function createPanel(title, subtitle, bodyHTML) {
         const panel = document.createElement('div');
         panel.className = 'dg-panel';
+        panel.style.pointerEvents = 'auto';
         panel.innerHTML = TTP.createHTML(`
             <div class="dg-header">
                 <div class="dg-logo">DG</div>
@@ -548,10 +573,10 @@
         `;
 
         const panel = createPanel('Takeout Helper', 'DeGoogler Browser Assistant', bodyHTML);
-        document.body.appendChild(panel);
+        getShadowRoot().appendChild(panel);
 
         // Select All Services
-        document.getElementById('dg-select-all').addEventListener('click', async () => {
+        dgById('dg-select-all').addEventListener('click', async () => {
             showToast('Selecting all services...');
             // Google Takeout uses toggle switches - find and enable them
             const toggles = document.querySelectorAll('[role="checkbox"][aria-checked="false"], input[type="checkbox"]:not(:checked)');
@@ -572,7 +597,7 @@
         });
 
         // Deselect All
-        document.getElementById('dg-deselect-all').addEventListener('click', async () => {
+        dgById('dg-deselect-all').addEventListener('click', async () => {
             showToast('Deselecting all services...');
             const toggles = document.querySelectorAll('[role="checkbox"][aria-checked="true"], input[type="checkbox"]:checked');
             let count = 0;
@@ -633,13 +658,13 @@
         `;
 
         const panel = createPanel('YouTube Exporter', 'DeGoogler Browser Assistant', bodyHTML);
-        document.body.appendChild(panel);
+        getShadowRoot().appendChild(panel);
         panel.classList.add('dg-collapsed');
 
-        document.getElementById('dg-yt-export-subs').addEventListener('click', async () => {
-            const statusEl = document.getElementById('dg-yt-status');
-            const progressBar = document.getElementById('dg-yt-progress');
-            const progressFill = document.getElementById('dg-yt-progress-fill');
+        dgById('dg-yt-export-subs').addEventListener('click', async () => {
+            const statusEl = dgById('dg-yt-status');
+            const progressBar = dgById('dg-yt-progress');
+            const progressFill = dgById('dg-yt-progress-fill');
             progressBar.style.display = 'block';
 
             statusEl.textContent = 'Fetching subscriptions...';
@@ -825,15 +850,15 @@
         `;
 
         const panel = createPanel('Account Audit', 'DeGoogler Browser Assistant', bodyHTML);
-        document.body.appendChild(panel);
+        getShadowRoot().appendChild(panel);
 
         function updateAuditProgress() {
             const checks = panel.querySelectorAll('.dg-check[data-key^="audit-"]');
             let done = 0;
             checks.forEach(c => { if (c.classList.contains('checked')) done++; });
             const pct = Math.round((done / checks.length) * 100);
-            const progressFill = document.getElementById('dg-audit-progress');
-            const statusEl = document.getElementById('dg-audit-status');
+            const progressFill = dgById('dg-audit-progress');
+            const statusEl = dgById('dg-audit-status');
             if (progressFill) progressFill.style.width = pct + '%';
             if (statusEl) statusEl.textContent = `${done} of ${checks.length} complete`;
         }
@@ -885,7 +910,7 @@
         `;
 
         const panel = createPanel('Gmail Migration', 'DeGoogler Browser Assistant', bodyHTML);
-        document.body.appendChild(panel);
+        getShadowRoot().appendChild(panel);
         panel.classList.add('dg-collapsed');
 
         // Persist checklist
@@ -1085,11 +1110,11 @@
         `;
 
         const panel = createPanel('Connected Services', 'DeGoogler Browser Assistant', bodyHTML);
-        document.body.appendChild(panel);
+        getShadowRoot().appendChild(panel);
 
-        const listEl = document.getElementById('dg-svc-list');
-        const emptyEl = document.getElementById('dg-svc-empty');
-        const statusEl = document.getElementById('dg-svc-scan-status');
+        const listEl = dgById('dg-svc-list');
+        const emptyEl = dgById('dg-svc-empty');
+        const statusEl = dgById('dg-svc-scan-status');
         let activeFilter = 'all';
 
         // ── DOM Scraper ──
@@ -1188,7 +1213,7 @@
         }
 
         // ── Scan buttons ──
-        document.getElementById('dg-svc-scan-signin').addEventListener('click', async () => {
+        dgById('dg-svc-scan-signin').addEventListener('click', async () => {
             statusEl.textContent = 'Clicking "Sign in with Google" tab...';
             statusEl.style.color = CFG.orange;
             const found = await scrapeApps('signin');
@@ -1199,7 +1224,7 @@
             renderList();
         });
 
-        document.getElementById('dg-svc-scan-access').addEventListener('click', async () => {
+        dgById('dg-svc-scan-access').addEventListener('click', async () => {
             statusEl.textContent = 'Clicking "Access to" tab...';
             statusEl.style.color = CFG.orange;
             const found = await scrapeApps('access');
@@ -1210,7 +1235,7 @@
             renderList();
         });
 
-        document.getElementById('dg-svc-scan-all').addEventListener('click', async () => {
+        dgById('dg-svc-scan-all').addEventListener('click', async () => {
             statusEl.textContent = 'Scanning Sign-in apps...';
             statusEl.style.color = CFG.orange;
             const found1 = await scrapeApps('signin');
@@ -1253,7 +1278,7 @@
             { name: 'Airbnb', type: 'email', pri: 'optional' },
         ];
 
-        const quickAddEl = document.getElementById('dg-svc-quickadd');
+        const quickAddEl = dgById('dg-svc-quickadd');
         function refreshQuickAdd() {
             const existing = loadServices();
             quickAddEl.querySelectorAll('button').forEach(btn => {
@@ -1397,7 +1422,7 @@
                 else if (done > 0) inProgress++;
                 else pending++;
             });
-            const el = (id) => document.getElementById(id);
+            const el = (id) => dgById(id);
             el('dg-stat-total').textContent = total;
             el('dg-stat-migrated').textContent = migrated;
             el('dg-stat-inprogress').textContent = inProgress;
@@ -1406,21 +1431,21 @@
         }
 
         // ── Tab filtering ──
-        document.getElementById('dg-svc-tabs').addEventListener('click', e => {
+        dgById('dg-svc-tabs').addEventListener('click', e => {
             if (!e.target.classList.contains('dg-tab')) return;
-            document.querySelectorAll('#dg-svc-tabs .dg-tab').forEach(t => t.classList.remove('active'));
+            getShadowRoot().querySelectorAll('#dg-svc-tabs .dg-tab').forEach(t => t.classList.remove('active'));
             e.target.classList.add('active');
             activeFilter = e.target.dataset.filter;
             renderList();
         });
 
         // ── Manual add ──
-        document.getElementById('dg-svc-add').addEventListener('click', () => {
-            const nameInput = document.getElementById('dg-svc-name');
+        dgById('dg-svc-add').addEventListener('click', () => {
+            const nameInput = dgById('dg-svc-name');
             const name = nameInput.value.trim();
             if (!name) return;
-            const type = document.getElementById('dg-svc-type').value;
-            const priority = document.getElementById('dg-svc-priority').value;
+            const type = dgById('dg-svc-type').value;
+            const priority = dgById('dg-svc-priority').value;
             const services = loadServices();
             if (services.some(s => s.name.toLowerCase() === name.toLowerCase())) {
                 showToast(name + ' already tracked'); return;
@@ -1437,19 +1462,19 @@
             showToast('Added ' + name);
         });
 
-        document.getElementById('dg-svc-name').addEventListener('keydown', e => {
-            if (e.key === 'Enter') document.getElementById('dg-svc-add').click();
+        dgById('dg-svc-name').addEventListener('keydown', e => {
+            if (e.key === 'Enter') dgById('dg-svc-add').click();
         });
 
-        document.getElementById('dg-svc-name').addEventListener('input', e => {
+        dgById('dg-svc-name').addEventListener('input', e => {
             const name = e.target.value.trim();
             if (name.length > 2) {
-                document.getElementById('dg-svc-priority').value = autoClassify(name);
+                dgById('dg-svc-priority').value = autoClassify(name);
             }
         });
 
         // ── Export CSV ──
-        document.getElementById('dg-svc-export').addEventListener('click', () => {
+        dgById('dg-svc-export').addEventListener('click', () => {
             const services = loadServices();
             if (services.length === 0) { showToast('No services to export'); return; }
 
@@ -1516,7 +1541,19 @@
 
     // ── Route to correct module ──
     function init() {
-        GM_addStyle(STYLES);
+        // Toast styles remain on main document (toasts are appended to body)
+        GM_addStyle(`
+            .dg-toast {
+                position: fixed; bottom: 20px; right: 20px;
+                background: ${CFG.bgPanel}; color: ${CFG.text};
+                border: 1px solid ${CFG.border}; padding: 12px 18px;
+                border-radius: 10px; font-size: 12px; font-family: ${CFG.fontStack};
+                box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 9999999;
+                opacity: 0; transform: translateY(10px); transition: all 0.3s ease;
+            }
+            .dg-toast.visible { opacity: 1; transform: none; }
+        `);
+        // Panel styles are injected into shadow DOM via getShadowRoot()
 
         // Remove anti-FOUC
         const af = document.getElementById('degoogler-antifouc');
