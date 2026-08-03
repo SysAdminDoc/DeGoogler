@@ -48,19 +48,32 @@ Add-Type -Name Win -Namespace Native -MemberDefinition @'
 [Native.Win]::ShowWindow([Native.Win]::GetConsoleWindow(), 0) | Out-Null
 
 # ── Check/Install exiftool for Photos metadata ──
+function Test-ExifToolLayout {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $false }
+    $filesDir = Join-Path (Split-Path -Parent $Path) 'exiftool_files'
+    return (Test-Path -LiteralPath $filesDir)
+}
+
 function Install-ExifTool {
     $exifPath = Join-Path $env:LOCALAPPDATA "DeGoogler\exiftool.exe"
-    if (Test-Path $exifPath) { return $exifPath }
+    if (Test-ExifToolLayout $exifPath) { return $exifPath }
     $bundledCandidates = @(
-        (Join-Path $PSScriptRoot "tools\exiftool.exe"),
-        (Join-Path $PSScriptRoot "exiftool.exe")
+        (Join-Path $script:toolkitRoot "tools\exiftool.exe"),
+        (Join-Path $script:toolkitRoot "exiftool.exe")
     )
     foreach ($candidate in $bundledCandidates) {
         if (Test-Path -LiteralPath $candidate) {
             $dir = Split-Path $exifPath
             if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
             Copy-Item -LiteralPath $candidate -Destination $exifPath -Force
-            return $exifPath
+            $bundledFiles = Join-Path (Split-Path -Parent $candidate) 'exiftool_files'
+            if (Test-Path -LiteralPath $bundledFiles) {
+                $targetFiles = Join-Path $dir 'exiftool_files'
+                if (Test-Path -LiteralPath $targetFiles) { Remove-Item -LiteralPath $targetFiles -Recurse -Force -ErrorAction SilentlyContinue }
+                Copy-Item -LiteralPath $bundledFiles -Destination $targetFiles -Recurse -Force
+            }
+            if (Test-ExifToolLayout $exifPath) { return $exifPath }
         }
     }
 
@@ -72,15 +85,19 @@ function Install-ExifTool {
         $release = Invoke-RestMethod -Uri $apiUrl -UseBasicParsing -ErrorAction Stop
         $zipAsset = $release.assets | Where-Object { $_.name -match '\.zip$' -and $_.name -match 'exiftool' } | Select-Object -First 1
         if ($zipAsset) {
-            $zipPath = Join-Path $env:TEMP "exiftool.zip"
+            $zipPath = Join-Path $env:TEMP ("degoogler-exiftool-" + [guid]::NewGuid().ToString('N') + ".zip")
             Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile $zipPath -UseBasicParsing
-            Expand-Archive -Path $zipPath -DestinationPath $dir -Force
-            $exeFile = Get-ChildItem -Path $dir -Filter "exiftool(-k).exe" -Recurse | Select-Object -First 1
-            if (-not $exeFile) { $exeFile = Get-ChildItem -Path $dir -Filter "exiftool*.exe" -Recurse | Select-Object -First 1 }
+            $extractDir = Join-Path $env:TEMP ("degoogler-exiftool-" + [guid]::NewGuid().ToString('N'))
+            Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
+            $exeFile = Get-ChildItem -Path $extractDir -Filter "exiftool(-k).exe" -Recurse | Select-Object -First 1
+            if (-not $exeFile) { $exeFile = Get-ChildItem -Path $extractDir -Filter "exiftool*.exe" -Recurse | Select-Object -First 1 }
             if ($exeFile) {
                 Copy-Item $exeFile.FullName $exifPath -Force
+                $downloadedFiles = Join-Path $exeFile.Directory.FullName 'exiftool_files'
+                if (Test-Path -LiteralPath $downloadedFiles) { Copy-Item -LiteralPath $downloadedFiles -Destination (Join-Path $dir 'exiftool_files') -Recurse -Force }
                 Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
-                return $exifPath
+                Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+                if (Test-ExifToolLayout $exifPath) { return $exifPath }
             }
         }
     } catch {}
@@ -834,10 +851,10 @@ $controls['btnPhotosRun'].Add_Click({
         Write-Log "[DRY RUN] Source folder: $photosDir"
         Write-Log "[DRY RUN] Fix dates: $fixDates | Delete JSON: $deleteJson | Recursive: $recursive"
         $exifPath = Join-Path $env:LOCALAPPDATA "DeGoogler\exiftool.exe"
-        if (Test-Path $exifPath) {
+        if (Test-ExifToolLayout $exifPath) {
             Write-Log "[DRY RUN] ExifTool found - would write EXIF metadata directly"
         } else {
-            Write-Log "[DRY RUN] ExifTool not found - would only fix file system dates"
+            Write-Log "[DRY RUN] ExifTool not found - would write XMP sidecars and fix file system dates"
         }
         if ($deleteJson) { Write-Log "[DRY RUN] Would DELETE $jsonCount JSON sidecar files after merging" "WARN" }
         Write-Log "[DRY RUN] Dry run complete. No files were modified." "OK"
@@ -854,72 +871,87 @@ $controls['btnPhotosRun'].Add_Click({
     Start-AsyncTask -ScriptBlock {
         param($photosDir, $deleteJson, $fixDates, $recursive, $checkpointPath)
         $exifPath = Join-Path $env:LOCALAPPDATA "DeGoogler\exiftool.exe"
-        $useExif = Test-Path $exifPath
+        $useExif = (Test-Path -LiteralPath $exifPath) -and (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $exifPath) 'exiftool_files'))
         $checkpoint = Read-DgAsyncCheckpoint $checkpointPath
 
         $searchOpt = if ($recursive) { [System.IO.SearchOption]::AllDirectories } else { [System.IO.SearchOption]::TopDirectoryOnly }
         $extensions = @('.jpg','.jpeg','.png','.gif','.mp4','.mov','.heic','.webp','.tiff','.bmp')
-        $allFiles = [System.IO.Directory]::GetFiles($photosDir, "*.*", $searchOpt) |
-            Where-Object { $extensions -contains [System.IO.Path]::GetExtension($_).ToLower() }
+        $allFiles = @([System.IO.Directory]::GetFiles($photosDir, "*.*", $searchOpt) |
+            Where-Object { $extensions -contains [System.IO.Path]::GetExtension($_).ToLower() })
+        $allJsonFiles = @(Get-ChildItem -Path $photosDir -Recurse:$recursive -Filter '*.json' -File -ErrorAction SilentlyContinue)
 
-        $processed = 0; $fixed = 0; $failed = 0; $total = $allFiles.Count
+        $processed = 0; $fixed = 0; $failed = 0; $xmpCount = 0; $total = $allFiles.Count
+        $dateSources = @{ EXIF = 0; JSON = 0; Picasa = 0; Filename = 0; MTime = 0 }
+        $burstCandidates = New-Object System.Collections.Generic.List[object]
+
+        function Get-DgExifDate {
+            param([string]$Path)
+            if (-not $useExif) { return $null }
+            try {
+                $values = @(& $exifPath '-s3' '-DateTimeOriginal' '-CreateDate' '-ModifyDate' $Path 2>$null)
+                foreach ($value in $values) {
+                    $parsed = ConvertTo-DgDateTimeOffset ([string]$value)
+                    if ($parsed) { return $parsed }
+                }
+            } catch {}
+            return $null
+        }
 
         foreach ($mediaFile in $allFiles) {
             $fileKey = [System.IO.Path]::GetFullPath($mediaFile)
             if (Test-DgAsyncCheckpointDone $checkpoint $fileKey) { continue }
             $processed++
-            $baseName = [System.IO.Path]::GetFileName($mediaFile)
-            # Google Takeout JSON sidecar naming patterns
-            $jsonCandidates = @(
-                "$mediaFile.json",
-                [System.IO.Path]::ChangeExtension($mediaFile, '') + ".json",
-                "$($mediaFile -replace '\.[^.]+$', '.json')"
-            )
-            # Also handle edited versions: photo.jpg -> photo.jpg(1).json
-            $dir = [System.IO.Path]::GetDirectoryName($mediaFile)
-            $jsonFiles = Get-ChildItem -Path $dir -Filter "*.json" -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -match [regex]::Escape($baseName) }
-            foreach ($jf in $jsonFiles) {
-                if ($jf.FullName -notin $jsonCandidates) { $jsonCandidates += $jf.FullName }
-            }
-
-            $jsonFile = $jsonCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-            if (-not $jsonFile) {
-                Set-DgAsyncCheckpointDone $checkpoint $fileKey
-                Write-DgAsyncCheckpoint $checkpointPath $checkpoint
-                continue
-            }
 
             try {
-                $json = Get-Content $jsonFile -Raw | ConvertFrom-Json
-                $photoTaken = $null
+                $jsonFile = Find-DgPhotoMetadataFile -MediaPath $mediaFile -JsonFiles $allJsonFiles
+                $json = $null
+                if ($jsonFile) {
+                    try { $json = Get-Content -LiteralPath $jsonFile -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop } catch { $json = $null }
+                }
+
+                $exifDate = Get-DgExifDate $mediaFile
+                $jsonDate = $null
+                $picasa = Get-DgPicasaMetadata $mediaFile
+                $filenameDate = Get-DgFilenameDate $mediaFile
+                $mtimeDate = [DateTimeOffset]::new([System.IO.File]::GetLastWriteTimeUtc($mediaFile))
+                if ($json) {
+                    $jsonTime = Get-DgProperty (Get-DgProperty $json 'photoTakenTime') 'timestamp'
+                    if (-not $jsonTime) { $jsonTime = Get-DgProperty (Get-DgProperty $json 'creationTime') 'timestamp' }
+                    $jsonDate = ConvertTo-DgDateTimeOffset $jsonTime
+                }
+                $photoTaken = $exifDate
+                $dateSource = 'EXIF'
+                if (-not $photoTaken) { $photoTaken = $jsonDate; $dateSource = 'JSON' }
+                if (-not $photoTaken -and $picasa) { $photoTaken = $picasa.Date; $dateSource = 'Picasa' }
+                if (-not $photoTaken) { $photoTaken = $filenameDate; $dateSource = 'Filename' }
+                if (-not $photoTaken) { $photoTaken = $mtimeDate; $dateSource = 'MTime' }
+                $dateSources[$dateSource]++
+                $burstKey = Get-DgBurstKey -MediaPath $mediaFile -Date $photoTaken
+                if ($burstKey) { $burstCandidates.Add([pscustomobject]@{ Key = $burstKey; Path = $mediaFile }) }
+
                 $geoLat = $null; $geoLon = $null; $desc = $null
-
-                # Extract timestamp
-                if ($json.photoTakenTime.timestamp) {
-                    $epoch = [long]$json.photoTakenTime.timestamp
-                    $photoTaken = [DateTimeOffset]::FromUnixTimeSeconds($epoch).LocalDateTime
-                } elseif ($json.creationTime.timestamp) {
-                    $epoch = [long]$json.creationTime.timestamp
-                    $photoTaken = [DateTimeOffset]::FromUnixTimeSeconds($epoch).LocalDateTime
+                if ($json) {
+                    $geo = Get-DgProperty $json 'geoData'
+                    if (-not $geo) { $geo = Get-DgProperty $json 'geoDataExif' }
+                    if ($geo -and (Get-DgProperty $geo 'latitude') -ne $null -and (Get-DgProperty $geo 'latitude') -ne 0) {
+                        $geoLat = ConvertTo-DgDouble (Get-DgProperty $geo 'latitude')
+                        $geoLon = ConvertTo-DgDouble (Get-DgProperty $geo 'longitude')
+                    }
+                    $desc = [string](Get-DgProperty $json 'description')
                 }
+                if ($null -eq $geoLat -and $picasa) { $geoLat = $picasa.Latitude; $geoLon = $picasa.Longitude }
+                if ([string]::IsNullOrWhiteSpace($desc) -and $picasa) { $desc = $picasa.Caption }
 
-                # Extract GPS
-                if ($json.geoData.latitude -and $json.geoData.latitude -ne 0) {
-                    $geoLat = $json.geoData.latitude
-                    $geoLon = $json.geoData.longitude
-                } elseif ($json.geoDataExif.latitude -and $json.geoDataExif.latitude -ne 0) {
-                    $geoLat = $json.geoDataExif.latitude
-                    $geoLon = $json.geoDataExif.longitude
-                }
-
-                # Extract description
-                if ($json.description) { $desc = $json.description }
-
-                if ($useExif -and $photoTaken) {
-                    $dateStr = $photoTaken.ToString('yyyy:MM:dd HH:mm:ss')
-                    $exifArgs = @("-overwrite_original", "-DateTimeOriginal=`"$dateStr`"", "-CreateDate=`"$dateStr`"", "-ModifyDate=`"$dateStr`"")
-                    if ($geoLat -and $geoLat -ne 0) {
+                $metadataApplied = $false
+                $exifApplied = $false
+                $extension = [System.IO.Path]::GetExtension($mediaFile).ToLowerInvariant()
+                if ($useExif -and ($photoTaken -or $geoLat -ne $null -or $desc)) {
+                    $exifArgs = @('-overwrite_original')
+                    if ($photoTaken) {
+                        $dateStr = $photoTaken.ToString('yyyy:MM:dd HH:mm:ss')
+                        $exifArgs += "-DateTimeOriginal=`"$dateStr`"", "-CreateDate=`"$dateStr`"", "-ModifyDate=`"$dateStr`""
+                    }
+                    if ($geoLat -ne $null -and $geoLon -ne $null) {
                         $latRef = if ($geoLat -ge 0) { "N" } else { "S" }
                         $lonRef = if ($geoLon -ge 0) { "E" } else { "W" }
                         $exifArgs += "-GPSLatitude=$([Math]::Abs($geoLat))", "-GPSLatitudeRef=$latRef"
@@ -928,16 +960,23 @@ $controls['btnPhotosRun'].Add_Click({
                     if ($desc) { $exifArgs += "-ImageDescription=`"$desc`"" }
                     $exifArgs += "`"$mediaFile`""
                     & $exifPath @exifArgs 2>$null | Out-Null
-                    $fixed++
-                } elseif ($photoTaken -and $fixDates) {
-                    # Fallback: at least fix file system dates
+                    $exifApplied = ($LASTEXITCODE -eq 0)
+                    $metadataApplied = $exifApplied
+                }
+                if ($fixDates -and $photoTaken) {
                     [System.IO.File]::SetCreationTime($mediaFile, $photoTaken)
                     [System.IO.File]::SetLastWriteTime($mediaFile, $photoTaken)
-                    $fixed++
+                    $metadataApplied = $true
                 }
+                $xmpPreferred = $extension -in @('.png','.heic','.webp')
+                if ((-not $exifApplied -or $xmpPreferred) -and ($photoTaken -or $geoLat -ne $null -or $desc)) {
+                    $xmpPath = Write-DgXmpSidecar -MediaPath $mediaFile -Date $photoTaken -Latitude $geoLat -Longitude $geoLon -Description $desc
+                    if ($xmpPath) { $xmpCount++; $metadataApplied = $true }
+                }
+                if ($metadataApplied) { $fixed++ }
 
                 if ($deleteJson -and $jsonFile) {
-                    Remove-Item $jsonFile -Force -ErrorAction SilentlyContinue
+                    Remove-Item -LiteralPath $jsonFile -Force -ErrorAction SilentlyContinue
                 }
                 Set-DgAsyncCheckpointDone $checkpoint $fileKey
                 Write-DgAsyncCheckpoint $checkpointPath $checkpoint
@@ -945,7 +984,8 @@ $controls['btnPhotosRun'].Add_Click({
                 $failed++
             }
         }
-        return @{ Total = $total; Fixed = $fixed; Failed = $failed }
+        $burstGroups = @($burstCandidates | Group-Object Key | Where-Object { $_.Count -gt 1 })
+        return @{ Total = $total; Fixed = $fixed; Failed = $failed; Xmp = $xmpCount; BurstGroups = $burstGroups.Count; DateSources = $dateSources }
     } -Arguments $photosDir, $deleteJson, $fixDates, $recursive, $checkpointPath -OnComplete {
         param($result, $errors)
         $controls['btnPhotosRun'].IsEnabled = $true
@@ -954,7 +994,8 @@ $controls['btnPhotosRun'].Add_Click({
         if ($result -and $result.Count -gt 0) {
             $r = $result[0]
             Write-Log "Photo metadata restoration complete: $($r.Fixed) fixed / $($r.Total) total / $($r.Failed) failed" "OK"
-            Write-JsonLog -Tool "PhotosMetadata" -Action "Complete" -Message "Processing finished" -Level "OK" -Data @{ total = $r.Total; fixed = $r.Fixed; failed = $r.Failed }
+            Write-Log "Wrote $($r.Xmp) XMP fallback sidecar(s); detected $($r.BurstGroups) burst group(s)." "INFO"
+            Write-JsonLog -Tool "PhotosMetadata" -Action "Complete" -Message "Processing finished" -Level "OK" -Data @{ total = $r.Total; fixed = $r.Fixed; failed = $r.Failed; xmp = $r.Xmp; burstGroups = $r.BurstGroups; dateSources = $r.DateSources }
         }
     }
 })

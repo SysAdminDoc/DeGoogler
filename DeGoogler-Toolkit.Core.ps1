@@ -83,6 +83,126 @@ function Format-DgIsoDate {
     return $Value.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ', [Globalization.CultureInfo]::InvariantCulture)
 }
 
+function Find-DgPhotoMetadataFile {
+    param([Parameter(Mandatory=$true)][string]$MediaPath, [object[]]$JsonFiles = @())
+    $directory = Split-Path -Parent $MediaPath
+    $name = [System.IO.Path]::GetFileName($MediaPath)
+    $base = [System.IO.Path]::GetFileNameWithoutExtension($MediaPath)
+    $direct = @(
+        "$MediaPath.json",
+        ([System.IO.Path]::ChangeExtension($MediaPath, '.json')),
+        (Join-Path $directory ($name + '.supplemental-metadata.json')),
+        (Join-Path $directory ($base + '.supplemental-metadata.json')),
+        (Join-Path $directory ($base + '.json'))
+    )
+    foreach ($candidate in $direct) { if (Test-Path -LiteralPath $candidate) { return $candidate } }
+    $truncated = if ($base.Length -gt 32) { $base.Substring(0, 32) } else { $base }
+    $matches = @($JsonFiles | Where-Object {
+        $jsonName = $_.Name
+        $jsonName -match [regex]::Escape($name) -or
+        $jsonName -match [regex]::Escape($base) -or
+        ($truncated.Length -ge 12 -and $jsonName -match [regex]::Escape($truncated))
+    })
+    if ($matches.Count -gt 0) {
+        return ($matches | Sort-Object @{Expression={
+            $jsonName = $_.Name
+            if ($jsonName -ieq ($name + '.json')) { 0 }
+            elseif ($jsonName -ieq ($base + '.json')) { 1 }
+            elseif ($jsonName -match 'supplemental-metadata') { 2 }
+            elseif ($jsonName -match [regex]::Escape($base)) { 3 }
+            else { 4 }
+        }}, Name | Select-Object -First 1).FullName
+    }
+    return $null
+}
+
+function Get-DgFilenameDate {
+    param([Parameter(Mandatory=$true)][string]$MediaPath)
+    $stem = [System.IO.Path]::GetFileNameWithoutExtension($MediaPath)
+    $patterns = @(
+        '(?<year>20\d{2})[-_](?<month>\d{2})[-_](?<day>\d{2})(?:[T _-](?<hour>\d{2})[-_:]?(?<minute>\d{2})[-_:]?(?<second>\d{2}))?',
+        '(?<year>20\d{2})(?<month>\d{2})(?<day>\d{2})[_-]?(?<hour>\d{2})(?<minute>\d{2})(?<second>\d{2})?'
+    )
+    foreach ($pattern in $patterns) {
+        $match = [regex]::Match($stem, $pattern)
+        if (-not $match.Success) { continue }
+        try {
+            $hour = if ($match.Groups['hour'].Success) { [int]$match.Groups['hour'].Value } else { 0 }
+            $minute = if ($match.Groups['minute'].Success) { [int]$match.Groups['minute'].Value } else { 0 }
+            $second = if ($match.Groups['second'].Success) { [int]$match.Groups['second'].Value } else { 0 }
+            return [DateTimeOffset]::new([int]$match.Groups['year'].Value, [int]$match.Groups['month'].Value, [int]$match.Groups['day'].Value, $hour, $minute, $second, [TimeSpan]::Zero)
+        } catch {}
+    }
+    return $null
+}
+
+function Get-DgPicasaMetadata {
+    param([Parameter(Mandatory=$true)][string]$MediaPath)
+    $directory = Split-Path -Parent $MediaPath
+    $fileName = [System.IO.Path]::GetFileName($MediaPath)
+    $base = [System.IO.Path]::GetFileNameWithoutExtension($MediaPath)
+    $iniPath = $null
+    for ($i = 0; $i -lt 5 -and $directory; $i++) {
+        foreach ($candidateName in @('.picasa.ini','Picasa.ini')) {
+            $candidate = Join-Path $directory $candidateName
+            if (Test-Path -LiteralPath $candidate) { $iniPath = $candidate; break }
+        }
+        if ($iniPath) { break }
+        $parent = Split-Path -Parent $directory
+        if ($parent -eq $directory) { break }
+        $directory = $parent
+    }
+    if (-not $iniPath) { return $null }
+    $section = $null; $values = @{}
+    foreach ($line in (Get-Content -LiteralPath $iniPath -ErrorAction SilentlyContinue)) {
+        if ($line -match '^\[([^]]+)\]') {
+            $section = $Matches[1]
+            continue
+        }
+        if ($section -and $section -ieq $fileName -or $section -and $section -ieq $base -or $section -and $section -ieq ($base + '.jpg')) {
+            if ($line -match '^([^=]+)=(.*)$') { $values[$Matches[1].Trim().ToLowerInvariant()] = $Matches[2].Trim() }
+        }
+    }
+    if ($values.Count -eq 0) { return $null }
+    return [pscustomobject]@{
+        Caption = $values['caption']
+        Date = (ConvertTo-DgDateTimeOffset $values['date'])
+        Latitude = (ConvertTo-DgDouble $values['latitude'])
+        Longitude = (ConvertTo-DgDouble $values['longitude'])
+    }
+}
+
+function Write-DgXmpSidecar {
+    param([Parameter(Mandatory=$true)][string]$MediaPath, [AllowNull()][DateTimeOffset]$Date, [AllowNull()]$Latitude, [AllowNull()]$Longitude, [AllowNull()][string]$Description)
+    if ($null -eq $Date -and $null -eq $Latitude -and $null -eq $Longitude -and [string]::IsNullOrWhiteSpace($Description)) { return $null }
+    $xmpPath = $MediaPath + '.xmp'
+    $lines = @(
+        '<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>',
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="DeGoogler">',
+        ' <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
+        '  <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmlns:exif="http://ns.adobe.com/exif/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/"'
+    )
+    if ($Date) { $lines += ('   xmp:CreateDate="' + (Format-DgIsoDate $Date) + '" xmp:ModifyDate="' + (Format-DgIsoDate $Date) + '" exif:DateTimeOriginal="' + (Format-DgIsoDate $Date) + '"') }
+    if ($Latitude -ne $null) { $lines += ('   exif:GPSLatitude="' + $Latitude + '"') }
+    if ($Longitude -ne $null) { $lines += ('   exif:GPSLongitude="' + $Longitude + '"') }
+    $lines += '  >'
+    if (-not [string]::IsNullOrWhiteSpace($Description)) {
+        $safe = [System.Security.SecurityElement]::Escape($Description)
+        $lines += ('   <dc:description><rdf:Alt><rdf:li xml:lang="x-default">' + $safe + '</rdf:li></rdf:Alt></dc:description>')
+    }
+    $lines += @('  </rdf:Description>', ' </rdf:RDF>', '</x:xmpmeta>', '<?xpacket end="w"?>')
+    Write-DgAtomicText -Path $xmpPath -Content ($lines -join "`n")
+    return $xmpPath
+}
+
+function Get-DgBurstKey {
+    param([Parameter(Mandatory=$true)][string]$MediaPath, [AllowNull()][DateTimeOffset]$Date)
+    $stem = [System.IO.Path]::GetFileNameWithoutExtension($MediaPath)
+    $normalized = $stem -replace '(?i)(?:\(\d+\)|[-_](?:burst|img|image)?\d+)$', ''
+    if ($normalized -eq $stem -or $null -eq $Date) { return $null }
+    return ($normalized.ToLowerInvariant() + '|' + $Date.ToUniversalTime().ToString('yyyyMMddHHmmss'))
+}
+
 function Convert-DgKeepTakeout {
     param([Parameter(Mandatory=$true)][string]$InputPath, [Parameter(Mandatory=$true)][string]$OutputPath)
     $files = @(Get-DgInputFiles -InputPath $InputPath -Extensions @('.json'))

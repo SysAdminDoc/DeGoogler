@@ -37,6 +37,22 @@ try {
     Assert-DgTest ($fit.Records -ge 1) 'Fit record extraction failed'
     Assert-DgTest ($maps.Records -eq 1) 'Maps record extraction failed'
     Assert-DgTest ($chat.Messages -eq 1) 'Chat message extraction failed'
+
+    $photoDir = Join-Path $root 'photo-in'; New-Item -ItemType Directory -Path $photoDir -Force | Out-Null
+    $photo = Join-Path $photoDir 'IMG_20240102_030405_1.jpg'
+    [IO.File]::WriteAllText($photo, 'placeholder')
+    [IO.File]::WriteAllText((Join-Path $photoDir 'IMG_20240102_030405_1.jpg.supplemental-metadata.json'), '{}')
+    [IO.File]::WriteAllText((Join-Path $photoDir '.picasa.ini'), "[IMG_20240102_030405_1.jpg]`ncaption=Trip photo`ndate=2024-01-02T03:04:05Z`n")
+    $sidecar = Find-DgPhotoMetadataFile -MediaPath $photo -JsonFiles @(Get-ChildItem -LiteralPath $photoDir -Filter '*.json')
+    $filenameDate = Get-DgFilenameDate -MediaPath $photo
+    $picasa = Get-DgPicasaMetadata -MediaPath $photo
+    $xmp = Write-DgXmpSidecar -MediaPath $photo -Date $filenameDate -Description 'Trip photo'
+    Assert-DgTest ($sidecar -like '*.supplemental-metadata.json') 'Supplemental sidecar matcher failed'
+    Assert-DgTest ($filenameDate.Year -eq 2024 -and $filenameDate.Hour -eq 3) 'Filename date fallback failed'
+    Assert-DgTest ($picasa.Caption -eq 'Trip photo') 'Picasa metadata parser failed'
+    Assert-DgTest (Test-Path $xmp) 'XMP sidecar output missing'
+    Assert-DgTest ((Get-Content -LiteralPath $xmp -Raw) -match 'DateTimeOriginal') 'XMP date metadata missing'
+    Assert-DgTest ((Get-DgBurstKey -MediaPath $photo -Date $filenameDate) -ne $null) 'Burst key detection failed'
     Write-Output 'PASS converter core smoke'
 } finally {
     if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

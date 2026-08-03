@@ -57,7 +57,7 @@ Or download the toolkit files from the repository/release bundle, keep `DeGoogle
 | Tool | Description |
 |------|-------------|
 | Takeout Extractor | Extracts and organizes Google Takeout ZIP archives into labeled folders per service |
-| Photos Metadata Fix | Restores EXIF data from Google's JSON sidecar files (timestamps, GPS, descriptions). Auto-downloads ExifTool. |
+| Photos Metadata Fix | Restores metadata with an EXIF → JSON → Picasa → filename → filesystem-time cascade, robust Takeout sidecar matching, XMP fallback, and bundled ExifTool 13.59. |
 | Password Converter | Converts Chrome password CSV to Bitwarden, KeePass, 1Password, or Proton Pass format. Optional secure-delete of source. |
 | Email (MBOX) Processor | Splits Gmail MBOX files into individual EML files with label-based folder organization |
 | Bookmark Converter | Converts Chrome JSON bookmarks to Netscape HTML for Firefox/Brave/LibreWolf. Auto-detects Chrome installation. |
@@ -128,6 +128,7 @@ Or download the toolkit files from the repository/release bundle, keep `DeGoogle
 - Admin rights (auto-elevates)
 - ExifTool (auto-downloaded for Photos Metadata Fix)
 - `DeGoogler-Toolkit.Core.ps1` beside the main script (included in the repository/release bundle)
+- Bundled `tools\exiftool.exe` plus `tools\exiftool_files\` (ExifTool 13.59, used offline)
 
 **Browser Assistant:**
 - Tampermonkey or Violentmonkey browser extension
