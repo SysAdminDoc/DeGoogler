@@ -3,6 +3,7 @@
 <head>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22><rect width=%221%22 height=%221%22 fill=%22%23cdd6f4%22/></svg>">
     <meta name="theme-color" content="#1e1e2e">
+<link rel="manifest" href="manifest.json">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DeGoogler — Take Back Your Digital Life</title>
@@ -34,8 +35,12 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 .sidebar{width:var(--sw);position:fixed;top:0;left:0;height:100vh;background:var(--bg2);border-right:1px solid var(--brd);display:flex;flex-direction:column;z-index:100;transition:transform .3s}
 .sb-brand{padding:20px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:12px}
 .sb-ico{width:32px;height:32px;border-radius:8px;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;font-family:var(--disp)}
-.sb-nm{font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:-.5px}
+.sb-nm{font-family:var(--disp);font-weight:800;font-size:16px;letter-spacing:0}
 .sb-ver{font-size:9px;color:var(--dim);margin-top:1px}
+.sb-prof{padding:12px 20px;border-bottom:1px solid var(--brd);display:flex;gap:8px;align-items:center}
+.sb-prof select{min-width:0;flex:1;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:var(--mono);font-size:11px;padding:7px 8px}
+.sb-prof button{width:30px;height:30px;border-radius:6px;border:1px solid var(--brd);background:var(--bg3);color:var(--mut);cursor:pointer;font-weight:800}
+.sb-prof button:hover{color:var(--txt);border-color:var(--brd2)}
 .sb-prog{padding:16px 20px;border-bottom:1px solid var(--brd)}
 .pbar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:8px}
 .pfill{height:100%;background:linear-gradient(90deg,var(--acc),var(--grn));border-radius:2px;transition:width .5s;width:0%}
@@ -59,7 +64,7 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 
 /* Step header */
 .sh{margin-bottom:32px}.sey{font-size:10px;text-transform:uppercase;letter-spacing:3px;color:var(--acc);font-weight:700;margin-bottom:8px}
-.stl{font-family:var(--disp);font-size:clamp(28px,5vw,36px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;margin-bottom:10px}
+.stl{font-family:var(--disp);font-size:36px;font-weight:800;letter-spacing:0;line-height:1.1;margin-bottom:10px}
 .sd{font-size:13px;color:var(--mut);line-height:1.7;max-width:580px}
 
 /* Action cards */
@@ -72,6 +77,8 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 .atl{font-size:13px;font-weight:700;line-height:1.4}
 .ac.dn .atl{color:var(--mut);text-decoration:line-through}
 .asu{font-size:11px;color:var(--mut);margin-top:4px;line-height:1.5}
+.ameta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ameta span{font-size:9px;font-weight:700;color:var(--dim);border:1px solid var(--brd);border-radius:4px;padding:2px 6px;background:var(--bg3)}
 .abg{font-size:9px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px}
 .abg-r{background:var(--rbg);color:var(--red)}.abg-a{background:var(--gbg);color:var(--grn)}.abg-m{background:var(--obg);color:var(--org)}
 .abd{padding:0 20px 16px 56px;display:none}
@@ -139,7 +146,7 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 
 /* Welcome */
 .hw{text-align:center;padding:60px 0 40px}
-.hw h1{font-family:var(--disp);font-size:clamp(40px,7vw,64px);font-weight:900;letter-spacing:-3px;line-height:.95;margin-bottom:16px;background:linear-gradient(135deg,var(--txt) 20%,var(--acc) 60%,var(--pur) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hw h1{font-family:var(--disp);font-size:60px;font-weight:900;letter-spacing:0;line-height:.95;margin-bottom:16px;background:linear-gradient(135deg,var(--txt) 20%,var(--acc) 60%,var(--pur) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hw p{font-size:14px;color:var(--mut);max-width:480px;margin:0 auto 28px;line-height:1.7}
 .hfl{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:32px 0}
 .hfs{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg2);border:1px solid var(--brd);border-radius:8px;font-size:11px;color:var(--mut)}
@@ -151,18 +158,22 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 .cflt{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
 .cf{padding:5px 12px;border:1px solid var(--brd);border-radius:6px;background:transparent;color:var(--dim);font-size:10px;font-family:var(--mono);cursor:pointer;transition:all .15s;font-weight:600}
 .cf:hover{color:var(--mut)}.cf.act{background:var(--abg);border-color:var(--abd);color:var(--acc)}
+.risk{font-size:11px;color:var(--org);line-height:1.5;margin:0 0 8px;padding:8px 10px;background:var(--obg);border:1px solid rgba(245,158,11,.18);border-radius:6px}
+.offline{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9000;background:var(--bg2);border:1px solid var(--brd);border-radius:8px;color:var(--mut);font-size:11px;padding:8px 12px;display:none}
 
 @media(max-width:800px){
   .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
   .mob-tog{display:flex}.main{margin-left:0}.ct{padding:60px 20px 80px}
   .tsts{grid-template-columns:repeat(2,1fr)}.hfl{flex-direction:column;align-items:center}.hfa{transform:rotate(90deg)}
+  .stl{font-size:30px}.hw h1{font-size:42px}
 }
 </style>
 </head>
 <body>
 <button class="mob-tog" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
 <aside class="sidebar">
-<div class="sb-brand"><div class="sb-ico">DG</div><div><div class="sb-nm">DeGoogler</div><div class="sb-ver">v0.0.5</div></div></div>
+<div class="sb-brand"><div class="sb-ico">DG</div><div><div class="sb-nm">DeGoogler</div><div class="sb-ver">v0.0.7</div></div></div>
+<div class="sb-prof"><select id="profSel" aria-label="Migration profile"></select><button id="profAdd" title="Add profile">+</button></div>
 <div class="sb-prog"><div class="pbar"><div class="pfill" id="gp"></div></div><div class="ptxt"><span id="gpct">0%</span><span id="gcnt">0/0</span></div></div>
 <nav class="sb-nav" id="sn"></nav>
 <div class="sb-ft">
@@ -178,7 +189,8 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 // ══════════════════════════════════════════════
 
 // ── Google Services Database (16 services, 51 alternatives) ──
-const SERVICES=[
+const APP_VERSION='0.0.7';
+let SERVICES=[
 {id:"gmail",name:"Gmail",icon:"\u2709",cat:"Communication",diff:"Medium",alts:[
 {id:"protonmail",name:"Proton Mail",icon:"\uD83D\uDFE3",priv:5,cost:"Free / $4+/mo",ease:4,plat:"Web, iOS, Android, Desktop (Bridge)",desc:"Swiss-based, end-to-end encrypted email. Gold standard for privacy.",imp:"Settings \u2192 Import/Export \u2192 Import emails from MBOX file",url:"https://account.proton.me/signup"},
 {id:"tuta",name:"Tuta Mail",icon:"\uD83D\uDFE2",priv:5,cost:"Free / $3+/mo",ease:4,plat:"Web, iOS, Android, Desktop",desc:"German E2E encrypted email with built-in calendar. Fully open source.",imp:"Currently supports manual migration. Use desktop client for bulk import.",url:"https://app.tuta.com/signup"},
@@ -250,7 +262,8 @@ const SERVICES=[
 {id:"calyxos",name:"CalyxOS",icon:"\uD83C\uDF3F",priv:5,cost:"Free",ease:3,plat:"Pixel, Fairphone",desc:"Privacy-focused Android with microG. Good balance of privacy and usability.",imp:"Flash via CalyxOS installer tool for supported devices",url:"https://calyxos.org"}]}
 ];
 
-const CATS=[...new Set(SERVICES.map(s=>s.cat))];
+let CATS=[...new Set(SERVICES.map(s=>s.cat))];
+function refreshCats(){CATS=[...new Set(SERVICES.map(s=>s.cat))]}
 
 // ── Wizard Steps ──
 const STEPS=[
@@ -291,23 +304,73 @@ const STEPS=[
 ];
 
 // ── State ──
-let cur=0,checks={},catFil='All';
-try{checks=JSON.parse(localStorage.getItem('dg-chk')||'{}')}catch{}
-function saveCk(){localStorage.setItem('dg-chk',JSON.stringify(checks))}
+const PROFILE_LIST_KEY='dg-profiles';
+const PROFILE_ACTIVE_KEY='dg-active-profile';
+function loadProfiles(){try{const p=JSON.parse(localStorage.getItem(PROFILE_LIST_KEY)||'[]');if(Array.isArray(p)&&p.length)return p}catch{}return[{id:'personal',name:'Personal'},{id:'work',name:'Work'}]}
+let profiles=loadProfiles();
+let curProfile=localStorage.getItem(PROFILE_ACTIVE_KEY)||profiles[0].id;
+if(!profiles.some(p=>p.id===curProfile))curProfile=profiles[0].id;
+function pkey(k){return 'dg-'+curProfile+'-'+k}
+function loadJson(key,oldKey,fallback){try{const raw=localStorage.getItem(pkey(key))||(curProfile==='personal'?localStorage.getItem(oldKey):null);return raw?JSON.parse(raw):fallback}catch{return fallback}}
+let cur=0,checks=loadJson('chk','dg-chk',{}),catFil='All',platformFil='All';
+function saveCk(){localStorage.setItem(pkey('chk'),JSON.stringify(checks))}
+function switchProfile(id){curProfile=id;localStorage.setItem(PROFILE_ACTIVE_KEY,id);checks=loadJson('chk','dg-chk',{});cur=0;render()}
+function addProfile(){const id='profile-'+Date.now();profiles.push({id:id,name:'Profile '+profiles.length});localStorage.setItem(PROFILE_LIST_KEY,JSON.stringify(profiles));switchProfile(id)}
+function renderProfiles(){
+  const sel=document.getElementById('profSel'),add=document.getElementById('profAdd');if(!sel||!add)return;
+  sel.innerHTML=profiles.map(p=>'<option value="'+p.id+'"'+(p.id===curProfile?' selected':'')+'>'+esc(p.name)+'</option>').join('');
+  sel.onchange=()=>switchProfile(sel.value);
+  add.onclick=addProfile;
+}
 
 // Tracker
-const TK='degoogler-tracker-services';
-function ldT(){try{return JSON.parse(localStorage.getItem(TK)||'[]')}catch{return[]}}
-function svT(d){localStorage.setItem(TK,JSON.stringify(d))}
+function ldT(){return loadJson('tracker-services','degoogler-tracker-services',[])}
+function svT(d){localStorage.setItem(pkey('tracker-services'),JSON.stringify(d))}
 function tSt(t){return t==='oauth'?['password','email','disconnect','verified']:t==='access'?['review','disconnect','verified']:['email','verified']}
 function tLb(t){return t==='oauth'?{password:'PW',email:'EM',disconnect:'RV',verified:'OK'}:t==='access'?{review:'RV',disconnect:'DC',verified:'OK'}:{email:'EM',verified:'OK'}}
 let tFil='all';
 
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function dots(n,max){let h='<span class="dots">';for(let i=0;i<max;i++)h+='<span class="dot'+(i<n?' f':'')+'"></span>';return h+'</span>'}
+const ACTION_META={
+install_tm:['10 min',1],install_us:['3 min',1],install_ps:['5 min',2],
+scan_go:['5 min',2],scan_si:['10 min',2],scan_ac:['10 min',2],scan_man:['45-90 min',4],scan_ret:['2 min',1],
+exp_go:['20 min',3],exp_wait:['1-2 days',2],exp_dl:['30-180 min',3],exp_pw:['5 min',3],exp_bk:['5 min',1],
+proc_ext:['30-240 min',3],proc_pho:['1-8 hr',5],proc_pw:['10 min',4],proc_mail:['30-180 min',3],proc_con:['10-30 min',2],
+alt_pm:['20 min',4],alt_em:['30 min',4],alt_imp:['1-2 days',5],
+fin_fwd:['10 min',3],fin_auto:['5 min',2],fin_2fa:['1-3 hr',5],fin_par:['2-4 weeks',3],fin_ver:['1-2 hr',4],fin_rev:['20 min',3],fin_del:['30 min',5],fin_nuke:['30 min',5]
+};
+const SERVICE_RISKS={
+gmail:'High lockout risk: migrate recovery emails, forwarding, and password-reset flows before deleting Gmail.',
+gdrive:'Check shared links and ownership transfers before deleting Drive files.',
+gsearch:'Low data risk, but browser defaults and search shortcuts need changing on every device.',
+chrome:'Export passwords and bookmarks before uninstalling or clearing profile data.',
+gcalendar:'Imported calendars can lose sharing settings and external subscription ownership.',
+gphotos:'Takeout often separates metadata into JSON sidecars; repair timestamps before importing.',
+gmaps:'Saved places and timeline exports need conversion before mobile map import.',
+youtube:'Subscriptions, watch history, playlists, and channel ownership migrate through separate exports.',
+gdocs:'Google-native Docs/Sheets/Slides must be exported to Office/OpenDocument formats.',
+gmeet:'Meeting links in future calendar events need replacing manually.',
+gkeep:'Keep notes can lose labels, colors, and reminders unless converted carefully.',
+gauth:'Do not delete Google Authenticator until every token is verified in the new app.',
+gpass:'Chrome password CSV is plaintext; convert and securely remove it after import.',
+gtranslate:'Low migration risk; replace bookmarks and browser integrations.',
+gplay:'Record paid apps and subscriptions before removing Play Store dependencies.',
+gandroid:'Full device migration can break banking, push notifications, and app attestation.'
+};
+const PLATFORM_FILTERS=['All','Android','iOS','Desktop/Web','Self-hosted'];
+function actionMeta(a){const m=ACTION_META[a.id]||['15 min',2];return{time:m[0],score:m[1]}}
+function altMatches(a){
+  if(platformFil==='All')return true;
+  const hay=(a.plat+' '+a.cost+' '+a.desc).toLowerCase();
+  if(platformFil==='Desktop/Web')return /web|windows|mac|linux|desktop/.test(hay);
+  if(platformFil==='Self-hosted')return /self-host|self hosted|selfhost/.test(hay);
+  return hay.includes(platformFil.toLowerCase());
+}
 
 // ── Sidebar ──
 function renderSB(){
+  renderProfiles();
   const nav=document.getElementById('sn');nav.innerHTML='';
   let tA=0,dA=0;
   STEPS.forEach((s,i)=>{
@@ -357,10 +420,12 @@ function mkAct(a){
   const dn=checks[a.id];
   const bc=a.badge==='r'?'abg-r':a.badge==='a'?'abg-a':'abg-m';
   const bl=a.badge==='r'?'Required':a.badge==='a'?'Automated':'Manual';
+  const meta=actionMeta(a);
   let h='<div class="ac'+(dn?' dn':'')+'" data-id="'+a.id+'">';
   h+='<div class="ah"><div class="ack'+(dn?' dn':'')+'" data-id="'+a.id+'">'+(dn?'\u2713':'')+'</div>';
   h+='<div class="ainf"><div class="atl">'+a.title+'</div>';
   if(a.sub)h+='<div class="asu">'+a.sub+'</div>';
+  h+='<div class="ameta"><span>'+meta.time+'</span><span>Difficulty '+meta.score+'/5</span></div>';
   h+='</div><span class="abg '+bc+'">'+bl+'</span></div>';
   if(a.body)h+='<div class="abd">'+a.body+'</div>';
   h+='</div>';return h;
@@ -384,17 +449,21 @@ function wireAct(){
 
 // ── Alternatives (full 16-service database) ──
 function mkAlts(){
-  let h='<div class="cflt"><button class="cf act" data-cat="All">All ('+SERVICES.length+')</button>';
-  CATS.forEach(c=>{const n=SERVICES.filter(s=>s.cat===c).length;h+='<button class="cf" data-cat="'+c+'">'+c+' ('+n+')</button>'});
+  let h='<div class="cflt"><button class="cf'+(catFil==='All'?' act':'')+'" data-cat="All">All ('+SERVICES.length+')</button>';
+  CATS.forEach(c=>{const n=SERVICES.filter(s=>s.cat===c).length;h+='<button class="cf'+(catFil===c?' act':'')+'" data-cat="'+c+'">'+c+' ('+n+')</button>'});
+  h+='</div><div class="cflt">';
+  PLATFORM_FILTERS.forEach(p=>{h+='<button class="cf'+(platformFil===p?' act':'')+'" data-platform="'+p+'">'+p+'</button>'});
   h+='</div>';
-  const filtered=catFil==='All'?SERVICES:SERVICES.filter(s=>s.cat===catFil);
+  const filtered=(catFil==='All'?SERVICES:SERVICES.filter(s=>s.cat===catFil)).filter(s=>s.alts.some(altMatches));
   filtered.forEach(svc=>{
     const dc=svc.diff==='Easy'?'d-e':svc.diff==='Hard'?'d-h':'d-m';
+    const alts=svc.alts.filter(altMatches);
     h+='<div class="svc" data-sid="'+svc.id+'"><div class="svh">';
     h+='<span class="svi">'+svc.icon+'</span><span class="svn">'+svc.name+'</span>';
     h+='<span class="svc-cat">'+svc.cat+'</span><span class="svc-diff '+dc+'">'+svc.diff+'</span>';
     h+='<span class="svch">\u276F</span></div><div class="svb">';
-    svc.alts.forEach(a=>{
+    h+='<div class="risk"><strong>Risk:</strong> '+esc(svc.risk||SERVICE_RISKS[svc.id]||'Verify account recovery, imports, and access before deleting source data.')+'</div>';
+    alts.forEach(a=>{
       h+='<div class="alt"><div class="altp"><span class="altn">'+a.icon+' '+a.name+'</span>';
       h+='<span class="altr"><span>'+dots(a.priv,5)+' Privacy</span><span>'+dots(a.ease,5)+' Ease</span></span></div>';
       h+='<div class="altd">'+a.desc+'</div>';
@@ -416,7 +485,7 @@ function mkAlts(){
 
 function wireAlts(){
   document.querySelectorAll('.cf').forEach(el=>{
-    el.addEventListener('click',()=>{catFil=el.dataset.cat;render()});
+    el.addEventListener('click',()=>{if(el.dataset.cat)catFil=el.dataset.cat;if(el.dataset.platform)platformFil=el.dataset.platform;render()});
   });
   document.querySelectorAll('.svh').forEach(el=>{
     el.addEventListener('click',()=>{el.closest('.svc').classList.toggle('open')});
@@ -468,6 +537,8 @@ function mkTracker(){
   h+='<button class="btn bg" id="tj" style="font-size:10px;padding:6px 12px">Export JSON</button>';
   h+='<button class="btn bg" id="ti" style="font-size:10px;padding:6px 12px">Import JSON</button>';
   h+='<input type="file" id="tif" accept=".json" style="display:none">';
+  h+='<button class="btn bg" id="tpj" style="font-size:10px;padding:6px 12px">Export plan.json</button>';
+  h+='<button class="btn bg" id="tics" style="font-size:10px;padding:6px 12px">Export Calendar</button>';
   h+='<button class="btn bg" id="tmd" style="font-size:10px;padding:6px 12px">Export Markdown Plan</button>';
   if(tot>0)h+='<button class="btn bg" id="tcl" style="font-size:10px;padding:6px 12px;margin-left:auto;color:var(--red)">Clear</button>';
   h+='</div>';
@@ -489,14 +560,41 @@ function wireTrk(){
     r.onload=()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){svT(d);render()}}catch{}};
     r.readAsText(f);e.target.value='';
   });
-  const tcl=document.getElementById('tcl');if(tcl)tcl.addEventListener('click',()=>{localStorage.removeItem(TK);render()});
+  const tcl=document.getElementById('tcl');if(tcl)tcl.addEventListener('click',()=>{localStorage.removeItem(pkey('tracker-services'));render()});
   const tmd=document.getElementById('tmd');if(tmd)tmd.addEventListener('click',exportMd);
+  const tpj=document.getElementById('tpj');if(tpj)tpj.addEventListener('click',()=>dl(JSON.stringify(buildPlan(),null,2),'application/json','plan.json'));
+  const tics=document.getElementById('tics');if(tics)tics.addEventListener('click',exportIcs);
 }
 
 // ── Markdown Export ──
+function buildPlan(){
+  const tracker=ldT();
+  const actions=[];
+  STEPS.filter(s=>s.actions).forEach(step=>{
+    step.actions.forEach(a=>{const meta=actionMeta(a);actions.push({id:a.id,phase:step.id,title:a.title,required:a.badge==='r',automated:a.badge==='a',timeEstimate:meta.time,difficultyScore:meta.score,done:!!checks[a.id]})});
+  });
+  return {schema:'https://sysadmindoc.github.io/DeGoogler/plan.schema.json',version:APP_VERSION,profile:curProfile,generatedAt:new Date().toISOString(),actions,connectedServices:tracker};
+}
+
+function icsDate(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}
+function exportIcs(){
+  const phases=[
+    ['Backup and export Google data','Export Takeout, passwords, bookmarks, and account inventory.',0,2],
+    ['Process exported data','Run the DeGoogler Toolkit to extract, repair, and convert files.',2,2],
+    ['Create replacement accounts','Create email, password manager, storage, calendar, and other replacement services.',4,2],
+    ['Migrate connected services','Update passwords, recovery emails, OAuth logins, and third-party access.',7,7],
+    ['Parallel run and final cutover','Run old and new services together, revoke access, and delete only after verification.',21,7]
+  ];
+  const start=new Date();start.setHours(9,0,0,0);
+  let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//DeGoogler//Migration Plan '+APP_VERSION+'//EN\r\nCALSCALE:GREGORIAN\r\n';
+  phases.forEach((p,i)=>{const s=new Date(start);s.setDate(s.getDate()+p[2]);const e=new Date(s);e.setDate(e.getDate()+p[3]);ics+='BEGIN:VEVENT\r\nUID:degoogler-'+curProfile+'-'+i+'@sysadmindoc.github.io\r\nDTSTAMP:'+icsDate(new Date())+'\r\nDTSTART;VALUE=DATE:'+icsDate(s).slice(0,8)+'\r\nDTEND;VALUE=DATE:'+icsDate(e).slice(0,8)+'\r\nSUMMARY:'+p[0]+'\r\nDESCRIPTION:'+p[1]+'\r\nEND:VEVENT\r\n'});
+  ics+='END:VCALENDAR\r\n';
+  dl(ics,'text/calendar','degoogler-migration-plan.ics');
+}
+
 function exportMd(){
   const data=ldT();
-  let md='# DeGoogler Migration Plan\n\nGenerated by DeGoogler v0.0.5\n\n';
+  let md='# DeGoogler Migration Plan\n\nGenerated by DeGoogler v'+APP_VERSION+'\n\n';
   md+='## Phase 1: Backup & Export\n\n';
   md+='- [ ] Go to https://takeout.google.com and start a full export\n';
   md+='- [ ] Download all Takeout archive files\n';
@@ -532,7 +630,21 @@ window.addEventListener('message',e=>{
 function chkInj(){const el=document.getElementById('degoogler-userscript-data');if(el){try{const d=JSON.parse(el.textContent);if(Array.isArray(d)&&d.length>0){svT(d);render()}}catch{}}}
 let polls=0;const pi=setInterval(()=>{chkInj();if(++polls>20)clearInterval(pi)},500);
 
-render();
+async function loadAlternatives(){
+  try{
+    const res=await fetch('alternatives.json',{cache:'no-cache'});
+    if(!res.ok)return;
+    const payload=await res.json();
+    if(Array.isArray(payload.services)&&payload.services.length){SERVICES=payload.services;refreshCats()}
+  }catch{}
+}
+if('serviceWorker' in navigator&&location.protocol!=='file:'){
+  navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  window.addEventListener('offline',()=>{let b=document.getElementById('offlineBanner');if(!b){b=document.createElement('div');b.id='offlineBanner';b.className='offline';b.textContent='Offline mode: cached DeGoogler files are active.';document.body.appendChild(b)}b.style.display='block'});
+  window.addEventListener('online',()=>{const b=document.getElementById('offlineBanner');if(b)b.style.display='none'});
+}
+
+loadAlternatives().finally(render);
 </script>
 </body>
 </html>

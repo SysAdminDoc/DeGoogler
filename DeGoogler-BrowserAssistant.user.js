@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DeGoogler Browser Assistant
 // @namespace    https://github.com/SysAdminDoc
-// @version      0.0.6
+// @version      0.0.7
 // @updateURL      https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-BrowserAssistant.user.js
 // @downloadURL    https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-BrowserAssistant.user.js
 // @description  Automates Google Takeout selection, exports YouTube subscriptions, audits connected apps/OAuth services, tracks migration of every account tied to your Google login, and assists with Gmail forwarding setup during the degoogling process.
@@ -10,6 +10,10 @@
 // @match        https://myaccount.google.com/*
 // @match        https://mail.google.com/*
 // @match        https://www.youtube.com/*
+// @match        https://drive.google.com/*
+// @match        https://docs.google.com/forms/*
+// @match        https://forms.google.com/*
+// @match        https://calendar.google.com/*
 // @match        https://sysadmindoc.github.io/DeGoogler/*
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -569,6 +573,11 @@
             <div class="dg-section">
                 <h4>After Export</h4>
                 <p>Once your Takeout is ready, use the <strong>DeGoogler Toolkit</strong> (PowerShell) to extract, organize, and convert your data for import into your new services.</p>
+                <div class="dg-btn-row">
+                    <button class="dg-btn dg-btn-secondary" id="dg-find-takeout-downloads">Find Pending Downloads</button>
+                    <button class="dg-btn dg-btn-primary" id="dg-download-takeout-files">Download Found Files</button>
+                </div>
+                <div id="dg-takeout-download-status" style="margin-top:8px;font-size:11px;color:${CFG.textMuted}">No download links scanned yet.</div>
             </div>
         `;
 
@@ -613,6 +622,45 @@
                 await new Promise(r => setTimeout(r, 80));
             }
             showToast(`Deselected ${count} services`);
+        });
+
+        let takeoutDownloads = [];
+        function scanTakeoutDownloads() {
+            const links = [...document.querySelectorAll('a[href]')];
+            const found = [];
+            links.forEach(link => {
+                const href = link.href || '';
+                const text = (link.textContent || link.getAttribute('aria-label') || '').trim();
+                if (!href) return;
+                if (/download|export|takeout/i.test(href + ' ' + text) && !found.some(item => item.url === href)) {
+                    found.push({ url: href, name: text || 'Google Takeout archive' });
+                }
+            });
+            takeoutDownloads = found;
+            const status = dgById('dg-takeout-download-status');
+            status.textContent = found.length ? `Found ${found.length} possible Takeout download link(s).` : 'No pending download links found on this page.';
+            status.style.color = found.length ? CFG.green : CFG.textMuted;
+            return found;
+        }
+
+        dgById('dg-find-takeout-downloads').addEventListener('click', () => {
+            const found = scanTakeoutDownloads();
+            showToast(found.length ? `Found ${found.length} download link(s)` : 'No Takeout download links found');
+        });
+
+        dgById('dg-download-takeout-files').addEventListener('click', () => {
+            const found = takeoutDownloads.length ? takeoutDownloads : scanTakeoutDownloads();
+            if (!found.length) { showToast('No Takeout download links found'); return; }
+            found.forEach((item, idx) => {
+                setTimeout(() => {
+                    try {
+                        GM_download({ url: item.url, name: `google-takeout-${idx + 1}.zip`, saveAs: false });
+                    } catch {
+                        window.open(item.url, '_blank', 'noopener');
+                    }
+                }, idx * 1000);
+            });
+            showToast(`Started ${found.length} download(s)`);
         });
 
         // Persist checklist state
@@ -936,10 +984,21 @@
         // ── Persistent service store ──
         const STORE_KEY = 'dg-connected-services';
         function loadServices() {
-            try { return JSON.parse(GM_getValue(STORE_KEY, '[]')); }
+            try {
+                const parsed = JSON.parse(GM_getValue(STORE_KEY, '[]'));
+                if (Array.isArray(parsed)) return parsed;
+                if (parsed && Array.isArray(parsed.services)) return parsed.services;
+                return [];
+            }
             catch { return []; }
         }
-        function saveServices(svcs) { GM_setValue(STORE_KEY, JSON.stringify(svcs)); }
+        function saveServices(svcs) {
+            GM_setValue(STORE_KEY, JSON.stringify({
+                version: '0.0.7',
+                encryptedAtRest: false,
+                services: svcs
+            }));
+        }
         function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
         // ── Known service domain map ──
@@ -1512,11 +1571,164 @@
     // ═══════════════════════════════════════════════
     // MODULE: GitHub Pages Sync Bridge
     // ═══════════════════════════════════════════════
+    function csvEscape(value) {
+        return '"' + String(value || '').replace(/"/g, '""') + '"';
+    }
+
+    function htmlEscape(value) {
+        return String(value || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function downloadAuditCsv(filename, headers, rows) {
+        const csv = [headers.join(',')].concat(rows.map(row => row.map(csvEscape).join(','))).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function initDriveAuditor() {
+        const bodyHTML = `
+            <div class="dg-section">
+                <h4>Drive Link-Risk Auditor</h4>
+                <p>Scans visible Drive rows for shared/link indicators and exports a review list.</p>
+                <div class="dg-btn-row">
+                    <button class="dg-btn dg-btn-primary" id="dg-drive-scan">Scan Visible Files</button>
+                    <button class="dg-btn dg-btn-secondary" id="dg-drive-export">Export CSV</button>
+                </div>
+                <div id="dg-drive-status" style="margin-top:8px;font-size:11px;color:${CFG.textMuted}">Open a Drive folder or search result, then scan.</div>
+            </div>
+            <div class="dg-section"><h4>Risk List</h4><div id="dg-drive-list"></div></div>
+        `;
+        const panel = createPanel('Drive Auditor', 'DeGoogler Browser Assistant', bodyHTML);
+        getShadowRoot().appendChild(panel);
+        let rows = [];
+
+        function scan() {
+            const candidates = [...document.querySelectorAll('[role="row"], [data-target="doc"], a[href*="/file/d/"], a[href*="/document/d/"], a[href*="/spreadsheets/d/"], a[href*="/presentation/d/"]')];
+            const seen = new Set();
+            rows = [];
+            candidates.forEach(node => {
+                const text = (node.textContent || node.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim();
+                const link = node.closest('a') || node.querySelector?.('a[href]') || (node.matches?.('a[href]') ? node : null);
+                const url = link ? link.href : '';
+                const hay = (text + ' ' + url).toLowerCase();
+                if (!text || seen.has(text + url)) return;
+                const risk = /anyone with the link|public|shared|people with access|link copied|viewer|editor|commenter/.test(hay);
+                if (!risk) return;
+                seen.add(text + url);
+                rows.push([text.slice(0, 180), url, /anyone|public/.test(hay) ? 'High' : 'Review', 'Visible sharing indicator']);
+            });
+            render();
+        }
+
+        function render() {
+            const list = dgById('dg-drive-list');
+            const status = dgById('dg-drive-status');
+            status.textContent = rows.length ? `Found ${rows.length} file(s) needing sharing review.` : 'No visible sharing risks found. Scroll more Drive rows and scan again.';
+            status.style.color = rows.length ? CFG.orange : CFG.textMuted;
+            list.innerHTML = TTP.createHTML(rows.length ? rows.map(r => `<div class="dg-app-card"><div class="dg-app-row"><span class="dg-priority-label dg-pri-important">${htmlEscape(r[2])}</span><span class="dg-app-name">${htmlEscape(r[0])}</span></div>${r[1] ? `<a href="${htmlEscape(r[1])}" target="_blank" style="font-size:10px;color:${CFG.accentColor}">Open file</a>` : ''}</div>`).join('') : '<p>No risk rows yet.</p>');
+        }
+
+        dgById('dg-drive-scan').addEventListener('click', scan);
+        dgById('dg-drive-export').addEventListener('click', () => {
+            if (!rows.length) { showToast('No Drive risks to export'); return; }
+            downloadAuditCsv('drive-sharing-risk-' + new Date().toISOString().slice(0,10) + '.csv', ['Name','URL','Risk','Reason'], rows);
+        });
+    }
+
+    function initFormsAuditor() {
+        const bodyHTML = `
+            <div class="dg-section">
+                <h4>Forms Auditor</h4>
+                <p>Lists visible Forms and flags forms that appear to be accepting responses.</p>
+                <div class="dg-btn-row">
+                    <button class="dg-btn dg-btn-primary" id="dg-forms-scan">Scan Visible Forms</button>
+                    <button class="dg-btn dg-btn-secondary" id="dg-forms-export">Export CSV</button>
+                </div>
+                <div id="dg-forms-status" style="margin-top:8px;font-size:11px;color:${CFG.textMuted}">Open the Forms home page or a Forms Drive search, then scan.</div>
+            </div>
+            <div class="dg-section"><h4>Forms</h4><div id="dg-forms-list"></div></div>
+        `;
+        const panel = createPanel('Forms Auditor', 'DeGoogler Browser Assistant', bodyHTML);
+        getShadowRoot().appendChild(panel);
+        let rows = [];
+        function scan() {
+            const links = [...document.querySelectorAll('a[href*="/forms/d/"], a[href*="docs.google.com/forms"]')];
+            const seen = new Set();
+            rows = links.map(link => {
+                const label = (link.textContent || link.getAttribute('aria-label') || 'Untitled form').replace(/\s+/g, ' ').trim();
+                const pageText = (link.closest('[role="row"], [role="gridcell"], div')?.textContent || '').toLowerCase();
+                const accepting = !/not accepting|closed|responses off/.test(pageText);
+                return [label, link.href, accepting ? 'Review accepting responses' : 'Possibly closed'];
+            }).filter(row => row[0] && !seen.has(row[1]) && seen.add(row[1]));
+            render();
+        }
+        function render() {
+            dgById('dg-forms-status').textContent = rows.length ? `Found ${rows.length} visible form(s).` : 'No visible forms found.';
+            dgById('dg-forms-list').innerHTML = TTP.createHTML(rows.length ? rows.map(r => `<div class="dg-app-card"><div class="dg-app-row"><span class="dg-priority-label dg-pri-important">${htmlEscape(r[2])}</span><span class="dg-app-name">${htmlEscape(r[0])}</span></div><a href="${htmlEscape(r[1])}" target="_blank" style="font-size:10px;color:${CFG.accentColor}">Open form</a></div>`).join('') : '<p>No forms scanned yet.</p>');
+        }
+        dgById('dg-forms-scan').addEventListener('click', scan);
+        dgById('dg-forms-export').addEventListener('click', () => {
+            if (!rows.length) { showToast('No Forms to export'); return; }
+            downloadAuditCsv('forms-audit-' + new Date().toISOString().slice(0,10) + '.csv', ['Name','URL','Status'], rows);
+        });
+    }
+
+    function initCalendarAuditor() {
+        const bodyHTML = `
+            <div class="dg-section">
+                <h4>Calendar Auditor</h4>
+                <p>Scans visible calendar settings/sidebar text for external subscriptions and sharing indicators.</p>
+                <div class="dg-btn-row">
+                    <button class="dg-btn dg-btn-primary" id="dg-cal-scan">Scan Calendar Page</button>
+                    <button class="dg-btn dg-btn-secondary" id="dg-cal-export">Export CSV</button>
+                </div>
+                <div id="dg-cal-status" style="margin-top:8px;font-size:11px;color:${CFG.textMuted}">Open Calendar settings or the sidebar, then scan.</div>
+            </div>
+            <div class="dg-section"><h4>Calendar Review Items</h4><div id="dg-cal-list"></div></div>
+        `;
+        const panel = createPanel('Calendar Auditor', 'DeGoogler Browser Assistant', bodyHTML);
+        getShadowRoot().appendChild(panel);
+        let rows = [];
+        function scan() {
+            const textNodes = [...document.querySelectorAll('[role="treeitem"], [role="listitem"], [aria-label], a[href]')];
+            const seen = new Set();
+            rows = [];
+            textNodes.forEach(node => {
+                const text = (node.textContent || node.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim();
+                const href = node.href || node.querySelector?.('a[href]')?.href || '';
+                const hay = (text + ' ' + href).toLowerCase();
+                if (!text || seen.has(text)) return;
+                if (/subscribed|other calendars|shared|public|ical|calendar.google.com\/calendar\/ical|external/.test(hay)) {
+                    seen.add(text);
+                    rows.push([text.slice(0, 180), href, /public|shared/.test(hay) ? 'Sharing review' : 'Subscription review']);
+                }
+            });
+            render();
+        }
+        function render() {
+            dgById('dg-cal-status').textContent = rows.length ? `Found ${rows.length} calendar item(s) to review.` : 'No visible calendar sharing/subscription indicators found.';
+            dgById('dg-cal-list').innerHTML = TTP.createHTML(rows.length ? rows.map(r => `<div class="dg-app-card"><div class="dg-app-row"><span class="dg-priority-label dg-pri-important">${htmlEscape(r[2])}</span><span class="dg-app-name">${htmlEscape(r[0])}</span></div>${r[1] ? `<a href="${htmlEscape(r[1])}" target="_blank" style="font-size:10px;color:${CFG.accentColor}">Open</a>` : ''}</div>`).join('') : '<p>No calendar items scanned yet.</p>');
+        }
+        dgById('dg-cal-scan').addEventListener('click', scan);
+        dgById('dg-cal-export').addEventListener('click', () => {
+            if (!rows.length) { showToast('No calendar items to export'); return; }
+            downloadAuditCsv('calendar-audit-' + new Date().toISOString().slice(0,10) + '.csv', ['Name','URL','Review'], rows);
+        });
+    }
+
     function initPageSync() {
         // Send tracked services to the landing page via postMessage
         const STORE_KEY = 'dg-connected-services';
         let data = [];
-        try { data = JSON.parse(GM_getValue(STORE_KEY, '[]')); }
+        try {
+            const parsed = JSON.parse(GM_getValue(STORE_KEY, '[]'));
+            data = Array.isArray(parsed) ? parsed : (parsed.services || []);
+        }
         catch { data = []; }
 
         if (data.length > 0) {
@@ -1577,6 +1789,14 @@
             initGmailHelper();
         } else if (host === 'www.youtube.com') {
             initYouTubeExporter();
+        } else if (host === 'drive.google.com') {
+            initDriveAuditor();
+        } else if (host === 'docs.google.com' && path.includes('/forms')) {
+            initFormsAuditor();
+        } else if (host === 'forms.google.com') {
+            initFormsAuditor();
+        } else if (host === 'calendar.google.com') {
+            initCalendarAuditor();
         } else if (host === 'sysadmindoc.github.io') {
             initPageSync();
         }

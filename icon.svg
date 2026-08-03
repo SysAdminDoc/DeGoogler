@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="DeGoogler">
+  <rect width="256" height="256" rx="32" fill="#050508"/>
+  <path d="M58 64h140v128H58z" fill="#12121a" stroke="#3b82f6" stroke-width="10"/>
+  <path d="M82 96h92M82 128h70M82 160h48" stroke="#e8e8f0" stroke-width="14" stroke-linecap="round"/>
+  <path d="M174 66l28 28M202 66l-28 28" stroke="#ef4444" stroke-width="12" stroke-linecap="round"/>
+</svg>

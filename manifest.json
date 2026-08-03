@@ -1,0 +1,18 @@
+{
+  "name": "DeGoogler",
+  "short_name": "DeGoogler",
+  "description": "Offline-capable migration wizard for leaving Google services.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050508",
+  "theme_color": "#1e1e2e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

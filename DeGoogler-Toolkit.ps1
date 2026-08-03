@@ -43,6 +43,18 @@ Add-Type -Name Win -Namespace Native -MemberDefinition @'
 function Install-ExifTool {
     $exifPath = Join-Path $env:LOCALAPPDATA "DeGoogler\exiftool.exe"
     if (Test-Path $exifPath) { return $exifPath }
+    $bundledCandidates = @(
+        (Join-Path $PSScriptRoot "tools\exiftool.exe"),
+        (Join-Path $PSScriptRoot "exiftool.exe")
+    )
+    foreach ($candidate in $bundledCandidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            $dir = Split-Path $exifPath
+            if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+            Copy-Item -LiteralPath $candidate -Destination $exifPath -Force
+            return $exifPath
+        }
+    }
 
     $dir = Split-Path $exifPath
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
@@ -92,6 +104,57 @@ function Write-JsonLog {
         $json = $entry | ConvertTo-Json -Compress -Depth 4
         [System.IO.File]::AppendAllText($script:logFile, "$json`n", [System.Text.Encoding]::UTF8)
     } catch {}
+}
+
+function Get-CheckpointPath {
+    param([string]$Tool, [string]$InputPath)
+    $safe = ($InputPath -replace '[\\/:*?"<>|]', '_')
+    if ($safe.Length -gt 90) { $safe = $safe.Substring($safe.Length - 90) }
+    return (Join-Path $script:logDir ("{0}_{1}.progress.json" -f $Tool, $safe))
+}
+
+function Read-Checkpoint {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return @{} }
+    try {
+        $json = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json
+        $map = @{}
+        foreach ($name in $json.PSObject.Properties.Name) {
+            if ($name -eq 'done') {
+                $doneMap = @{}
+                foreach ($doneName in $json.done.PSObject.Properties.Name) { $doneMap[$doneName] = $json.done.$doneName }
+                $map[$name] = $doneMap
+            } else {
+                $map[$name] = $json.$name
+            }
+        }
+        return $map
+    } catch {
+        return @{}
+    }
+}
+
+function Write-Checkpoint {
+    param([string]$Path, [hashtable]$State)
+    try {
+        $dir = Split-Path $Path
+        if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        ($State | ConvertTo-Json -Depth 5) | Set-Content -LiteralPath $Path -Encoding UTF8
+    } catch {}
+}
+
+function Set-CheckpointDone {
+    param([hashtable]$State, [string]$Key)
+    if (-not $State.ContainsKey('done')) { $State.done = @{} }
+    $State.done[$Key] = (Get-Date -Format 'o')
+}
+
+function Test-CheckpointDone {
+    param([hashtable]$State, [string]$Key)
+    if (-not $State.ContainsKey('done')) { return $false }
+    $done = $State['done']
+    if ($done -is [hashtable]) { return $done.ContainsKey($Key) }
+    return ($done.PSObject.Properties.Name -contains $Key)
 }
 
 # ── XAML UI ──
@@ -216,6 +279,7 @@ $xaml = @'
                 <Button x:Name="btnTabEmail" Content="Email (MBOX) Processor" Margin="0,0,6,6" Tag="tabEmail"/>
                 <Button x:Name="btnTabBookmarks" Content="Bookmark Converter" Margin="0,0,6,6" Tag="tabBookmarks"/>
                 <Button x:Name="btnTabContacts" Content="Contacts Processor" Margin="0,0,6,6" Tag="tabContacts"/>
+                <Button x:Name="btnTabConverters" Content="Export Converters" Margin="0,0,6,6" Tag="tabConverters"/>
             </WrapPanel>
 
             <!-- Tab: Takeout Extractor -->
@@ -358,6 +422,39 @@ $xaml = @'
                     <Button x:Name="btnContactsRun" Content="Process Contacts" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
+
+            <!-- Tab: Export Converters -->
+            <Border x:Name="tabConverters" Grid.Row="1" Background="#16213e" CornerRadius="8" Padding="20" BorderBrush="#333" BorderThickness="1" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="Takeout Export Converters" FontSize="16" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Text="Converts Google Keep, Fit, Maps saved places, and Chat/Hangouts exports into portable formats." Foreground="#999" FontSize="12" Margin="0,0,0,16" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="Converter:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="cmbConvertersType" Width="280">
+                            <ComboBoxItem Content="Keep to Markdown" IsSelected="True"/>
+                            <ComboBoxItem Content="Fit to Apple Health XML / TCX"/>
+                            <ComboBoxItem Content="Maps saved places to GeoJSON / GPX / KML"/>
+                            <ComboBoxItem Content="Chat or Hangouts MBOX to JSON"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="txtConvertersInput" IsReadOnly="True" Text="Select export file or folder..." Foreground="#666"/>
+                        <Button x:Name="btnConvertersBrowse" Grid.Column="1" Content="Browse" Margin="8,0,0,0"/>
+                    </Grid>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="txtConvertersOutput" IsReadOnly="True" Text="Select output folder..." Foreground="#666"/>
+                        <Button x:Name="btnConvertersOutputBrowse" Grid.Column="1" Content="Browse" Margin="8,0,0,0"/>
+                    </Grid>
+                    <CheckBox x:Name="chkConvertersDryRun" Content="Dry Run - preview actions without writing" Margin="0,0,0,12" Foreground="#f59e0b"/>
+                    <Button x:Name="btnConvertersRun" Content="Convert Export" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
         </Grid>
 
         <!-- Progress bar -->
@@ -385,14 +482,15 @@ $window = [System.Windows.Markup.XamlReader]::Parse($xaml)
 # Find all named controls
 $controls = @{}
 $controlNames = @(
-    'btnTabTakeout','btnTabPhotos','btnTabPasswords','btnTabEmail','btnTabBookmarks','btnTabContacts',
-    'tabTakeout','tabPhotos','tabPasswords','tabEmail','tabBookmarks','tabContacts',
+    'btnTabTakeout','btnTabPhotos','btnTabPasswords','btnTabEmail','btnTabBookmarks','btnTabContacts','btnTabConverters',
+    'tabTakeout','tabPhotos','tabPasswords','tabEmail','tabBookmarks','tabContacts','tabConverters',
     'txtTakeoutInput','btnTakeoutBrowse','txtTakeoutOutput','btnTakeoutOutputBrowse','chkTakeoutDeleteZips','chkTakeoutDryRun','btnTakeoutRun',
     'txtPhotosInput','btnPhotosBrowse','chkPhotosDeleteJson','chkPhotosFixDates','chkPhotosRecursive','chkPhotosDryRun','lblPhotosExiftool','btnPhotosRun',
     'txtPasswordsInput','btnPasswordsBrowse','cmbPasswordsFormat','chkPasswordsSecureDelete','chkPasswordsDryRun','btnPasswordsRun',
     'txtEmailInput','btnEmailBrowse','txtEmailOutput','btnEmailOutputBrowse','chkEmailPreserveLabels','chkEmailDryRun','btnEmailRun',
     'txtBookmarksInput','btnBookmarksBrowse','btnBookmarksDetect','chkBookmarksDryRun','btnBookmarksRun',
     'txtContactsInput','btnContactsBrowse','chkContactsDedup','chkContactsClean','chkContactsDryRun','btnContactsRun',
+    'cmbConvertersType','txtConvertersInput','btnConvertersBrowse','txtConvertersOutput','btnConvertersOutputBrowse','chkConvertersDryRun','btnConvertersRun',
     'progressBar','lblProgress','txtLog'
 )
 foreach ($name in $controlNames) {
@@ -424,8 +522,8 @@ function Set-Progress {
 }
 
 # ── Tab switching ──
-$tabNames = @('tabTakeout','tabPhotos','tabPasswords','tabEmail','tabBookmarks','tabContacts')
-$tabBtnNames = @('btnTabTakeout','btnTabPhotos','btnTabPasswords','btnTabEmail','btnTabBookmarks','btnTabContacts')
+$tabNames = @('tabTakeout','tabPhotos','tabPasswords','tabEmail','tabBookmarks','tabContacts','tabConverters')
+$tabBtnNames = @('btnTabTakeout','btnTabPhotos','btnTabPasswords','btnTabEmail','btnTabBookmarks','btnTabContacts','btnTabConverters')
 
 function Switch-Tab {
     param([string]$TargetTab)

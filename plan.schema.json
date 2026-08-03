@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sysadmindoc.github.io/DeGoogler/plan.schema.json",
+  "title": "DeGoogler Migration Plan",
+  "type": "object",
+  "required": ["schema", "version", "profile", "generatedAt", "actions", "connectedServices"],
+  "properties": {
+    "schema": { "type": "string" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "profile": { "type": "string" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "phase", "title", "required", "automated", "timeEstimate", "difficultyScore", "done"],
+        "properties": {
+          "id": { "type": "string" },
+          "phase": { "type": "string" },
+          "title": { "type": "string" },
+          "required": { "type": "boolean" },
+          "automated": { "type": "boolean" },
+          "timeEstimate": { "type": "string" },
+          "difficultyScore": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "done": { "type": "boolean" }
+        }
+      }
+    },
+    "connectedServices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "type", "priority"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "type": { "enum": ["oauth", "access", "email"] },
+          "priority": { "enum": ["critical", "important", "optional"] },
+          "domain": { "type": "string" },
+          "steps": { "type": "object" }
+        }
+      }
+    }
+  }
+}

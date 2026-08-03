@@ -1,0 +1,786 @@
+{
+  "version": "0.0.7",
+  "updated": "2026-06-27",
+  "services": [
+    {
+      "id": "gmail",
+      "name": "Gmail",
+      "icon": "✉",
+      "cat": "Communication",
+      "diff": "Medium",
+      "alts": [
+        {
+          "id": "protonmail",
+          "name": "Proton Mail",
+          "icon": "🟣",
+          "priv": 5,
+          "cost": "Free / $4+/mo",
+          "ease": 4,
+          "plat": "Web, iOS, Android, Desktop (Bridge)",
+          "desc": "Swiss-based, end-to-end encrypted email. Gold standard for privacy.",
+          "imp": "Settings → Import/Export → Import emails from MBOX file",
+          "url": "https://account.proton.me/signup"
+        },
+        {
+          "id": "tuta",
+          "name": "Tuta Mail",
+          "icon": "🟢",
+          "priv": 5,
+          "cost": "Free / $3+/mo",
+          "ease": 4,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "German E2E encrypted email with built-in calendar. Fully open source.",
+          "imp": "Currently supports manual migration. Use desktop client for bulk import.",
+          "url": "https://app.tuta.com/signup"
+        },
+        {
+          "id": "fastmail",
+          "name": "Fastmail",
+          "icon": "🔵",
+          "priv": 4,
+          "cost": "$3+/mo",
+          "ease": 5,
+          "plat": "Web, iOS, Android",
+          "desc": "Australian privacy-focused email. Excellent UI, great import tools, custom domains.",
+          "imp": "Settings → Migration → Add Gmail account for automatic import",
+          "url": "https://www.fastmail.com/signup/"
+        },
+        {
+          "id": "mailbox",
+          "name": "Mailbox.org",
+          "icon": "🟤",
+          "priv": 5,
+          "cost": "€1+/mo",
+          "ease": 3,
+          "plat": "Web, IMAP/SMTP",
+          "desc": "German privacy email with office suite, calendar, cloud storage. GDPR-first.",
+          "imp": "Use IMAP migration wizard in admin panel",
+          "url": "https://mailbox.org/en/"
+        }
+      ]
+    },
+    {
+      "id": "gdrive",
+      "name": "Google Drive",
+      "icon": "📁",
+      "cat": "Storage",
+      "diff": "Medium",
+      "alts": [
+        {
+          "id": "protondrive",
+          "name": "Proton Drive",
+          "icon": "🟣",
+          "priv": 5,
+          "cost": "Free 1GB / $4+/mo",
+          "ease": 4,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "E2E encrypted cloud storage from Proton. Integrates with Proton ecosystem.",
+          "imp": "Upload files directly through web or desktop client",
+          "url": "https://account.proton.me/signup"
+        },
+        {
+          "id": "nextcloud",
+          "name": "Nextcloud",
+          "icon": "🔵",
+          "priv": 5,
+          "cost": "Free (self-hosted)",
+          "ease": 2,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "Self-hosted cloud platform. Full Google Workspace replacement. Maximum control.",
+          "imp": "Upload via desktop sync client or web interface. Supports WebDAV.",
+          "url": "https://nextcloud.com/signup/"
+        },
+        {
+          "id": "tresorit",
+          "name": "Tresorit",
+          "icon": "🟢",
+          "priv": 5,
+          "cost": "$11+/mo",
+          "ease": 5,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "Swiss E2E encrypted cloud storage. Business-grade with zero-knowledge encryption.",
+          "imp": "Install desktop app → drag and drop files from Takeout export",
+          "url": "https://tresorit.com/pricing"
+        },
+        {
+          "id": "filen",
+          "name": "Filen",
+          "icon": "⚪",
+          "priv": 5,
+          "cost": "Free 10GB / $2+/mo",
+          "ease": 4,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "German zero-knowledge encrypted cloud. Fast uploads, generous free tier.",
+          "imp": "Upload via web or desktop client from Takeout export folder",
+          "url": "https://filen.io/r"
+        }
+      ]
+    },
+    {
+      "id": "gsearch",
+      "name": "Google Search",
+      "icon": "🔍",
+      "cat": "Web",
+      "diff": "Easy",
+      "alts": [
+        {
+          "id": "duckduckgo",
+          "name": "DuckDuckGo",
+          "icon": "🦆",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Web, Browser, iOS, Android",
+          "desc": "Most popular private search engine. No tracking, no search history stored.",
+          "imp": "Set as default search engine in your browser settings",
+          "url": "https://duckduckgo.com"
+        },
+        {
+          "id": "brave_search",
+          "name": "Brave Search",
+          "icon": "🦁",
+          "priv": 5,
+          "cost": "Free / $3/mo",
+          "ease": 5,
+          "plat": "Web, Brave Browser",
+          "desc": "Independent index (not reliant on Google/Bing). Built by Brave Software.",
+          "imp": "Set as default in browser or visit search.brave.com",
+          "url": "https://search.brave.com"
+        },
+        {
+          "id": "startpage",
+          "name": "Startpage",
+          "icon": "🟢",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Web",
+          "desc": "Anonymized Google results without the tracking. Best of both worlds.",
+          "imp": "Set as default search engine or use browser extension",
+          "url": "https://www.startpage.com"
+        },
+        {
+          "id": "kagi",
+          "name": "Kagi",
+          "icon": "🟡",
+          "priv": 5,
+          "cost": "$5+/mo",
+          "ease": 5,
+          "plat": "Web",
+          "desc": "Premium ad-free search. Superior results, no tracking, user-funded model.",
+          "imp": "Create account and set as default search engine",
+          "url": "https://kagi.com"
+        }
+      ]
+    },
+    {
+      "id": "chrome",
+      "name": "Chrome",
+      "icon": "🌐",
+      "cat": "Web",
+      "diff": "Easy",
+      "alts": [
+        {
+          "id": "firefox",
+          "name": "Firefox",
+          "icon": "🦊",
+          "priv": 4,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Windows, Mac, Linux, iOS, Android",
+          "desc": "Open-source browser by Mozilla. Huge extension library. Community #1 for privacy.",
+          "imp": "Import bookmarks, passwords, history during first-run setup wizard",
+          "url": "https://www.mozilla.org/firefox/new/"
+        },
+        {
+          "id": "brave",
+          "name": "Brave",
+          "icon": "🦁",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Windows, Mac, Linux, iOS, Android",
+          "desc": "Chromium-based with built-in ad/tracker blocking, VPN, and privacy features.",
+          "imp": "Import Chrome data during setup. Extensions are compatible.",
+          "url": "https://brave.com/download/"
+        },
+        {
+          "id": "librewolf",
+          "name": "LibreWolf",
+          "icon": "🐺",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 3,
+          "plat": "Windows, Mac, Linux",
+          "desc": "Hardened Firefox fork. Maximum privacy out of the box. No telemetry.",
+          "imp": "Import Firefox/Chrome bookmarks via Library → Import and Backup",
+          "url": "https://librewolf.net"
+        },
+        {
+          "id": "vivaldi",
+          "name": "Vivaldi",
+          "icon": "🎵",
+          "priv": 4,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Windows, Mac, Linux, iOS, Android",
+          "desc": "Feature-rich Chromium browser. Built-in mail, calendar, notes. No tracking.",
+          "imp": "Import Chrome data during setup. Chromium extension compatible.",
+          "url": "https://vivaldi.com/download/"
+        }
+      ]
+    },
+    {
+      "id": "gcalendar",
+      "name": "Google Calendar",
+      "icon": "📅",
+      "cat": "Productivity",
+      "diff": "Easy",
+      "alts": [
+        {
+          "id": "protoncalendar",
+          "name": "Proton Calendar",
+          "icon": "🟣",
+          "priv": 5,
+          "cost": "Free with Proton",
+          "ease": 4,
+          "plat": "Web, iOS, Android",
+          "desc": "E2E encrypted calendar. Seamlessly integrates with Proton Mail.",
+          "imp": "Settings → Import → Upload .ics file from Google Takeout",
+          "url": "https://account.proton.me/signup"
+        },
+        {
+          "id": "tutacalendar",
+          "name": "Tuta Calendar",
+          "icon": "🟢",
+          "priv": 5,
+          "cost": "Free with Tuta",
+          "ease": 4,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "Encrypted calendar built into Tuta. Zero-knowledge encryption.",
+          "imp": "Import .ics calendar file through calendar settings",
+          "url": "https://app.tuta.com/signup"
+        },
+        {
+          "id": "etesync",
+          "name": "EteSync",
+          "icon": "🔵",
+          "priv": 5,
+          "cost": "$2/mo",
+          "ease": 3,
+          "plat": "Web, iOS, Android, Desktop (DAV)",
+          "desc": "Secure E2E encrypted calendar/contacts sync. Works with standard CalDAV apps.",
+          "imp": "Import .ics files via web client or CalDAV-compatible app",
+          "url": "https://www.etesync.com"
+        }
+      ]
+    },
+    {
+      "id": "gphotos",
+      "name": "Google Photos",
+      "icon": "📷",
+      "cat": "Storage",
+      "diff": "Hard",
+      "alts": [
+        {
+          "id": "immich",
+          "name": "Immich",
+          "icon": "📸",
+          "priv": 5,
+          "cost": "Free (self-hosted)",
+          "ease": 2,
+          "plat": "Web, iOS, Android",
+          "desc": "Self-hosted Google Photos replacement. AI-powered face/object recognition locally.",
+          "imp": "Use CLI upload tool to bulk import from Takeout.",
+          "url": "https://immich.app"
+        },
+        {
+          "id": "ente",
+          "name": "Ente Photos",
+          "icon": "🟢",
+          "priv": 5,
+          "cost": "Free 5GB / $3+/mo",
+          "ease": 5,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "E2E encrypted photo storage. Open source. AI features run on-device.",
+          "imp": "Desktop app → Import → Select Google Takeout photos folder",
+          "url": "https://ente.io"
+        },
+        {
+          "id": "photoprism",
+          "name": "PhotoPrism",
+          "icon": "🌈",
+          "priv": 5,
+          "cost": "Free (self-hosted) / $7+/mo",
+          "ease": 3,
+          "plat": "Web, PWA",
+          "desc": "AI-powered self-hosted photo app. Browse by location, faces, subjects.",
+          "imp": "Copy photos to import directory, then run indexer via web UI",
+          "url": "https://www.photoprism.app"
+        }
+      ]
+    },
+    {
+      "id": "gmaps",
+      "name": "Google Maps",
+      "icon": "🗺",
+      "cat": "Navigation",
+      "diff": "Easy",
+      "alts": [
+        {
+          "id": "osmand",
+          "name": "OsmAnd",
+          "icon": "🗺",
+          "priv": 5,
+          "cost": "Free / $10",
+          "ease": 4,
+          "plat": "iOS, Android",
+          "desc": "Offline maps based on OpenStreetMap. No tracking, fully offline capable.",
+          "imp": "Download maps for your region. Import saved places as GPX.",
+          "url": "https://osmand.net"
+        },
+        {
+          "id": "organicmaps",
+          "name": "Organic Maps",
+          "icon": "🌿",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "iOS, Android",
+          "desc": "Privacy-focused offline maps. Fork of Maps.me without tracking. Very fast.",
+          "imp": "Install and download offline maps. No account needed.",
+          "url": "https://organicmaps.app"
+        },
+        {
+          "id": "magicearth",
+          "name": "Magic Earth",
+          "icon": "🌍",
+          "priv": 4,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "iOS, Android",
+          "desc": "Free navigation with real-time traffic. No tracking, no ads.",
+          "imp": "Install app. Supports offline maps and turn-by-turn navigation.",
+          "url": "https://www.magicearth.com"
+        }
+      ]
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube",
+      "icon": "▶",
+      "cat": "Media",
+      "diff": "Hard",
+      "alts": [
+        {
+          "id": "newpipe",
+          "name": "NewPipe",
+          "icon": "📺",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 4,
+          "plat": "Android (F-Droid)",
+          "desc": "Lightweight YouTube frontend. No Google account needed. Background play, downloads.",
+          "imp": "Export YouTube subscriptions via Takeout → Import OPML into NewPipe",
+          "url": "https://newpipe.net"
+        },
+        {
+          "id": "freetube",
+          "name": "FreeTube",
+          "icon": "📺",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 4,
+          "plat": "Windows, Mac, Linux",
+          "desc": "Desktop YouTube client. No tracking, no ads. Import subscriptions.",
+          "imp": "Settings → Data Settings → Import Subscriptions from YouTube/OPML",
+          "url": "https://freetubeapp.io"
+        },
+        {
+          "id": "invidious",
+          "name": "Invidious",
+          "icon": "🔵",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 3,
+          "plat": "Web (self-hosted / public instances)",
+          "desc": "Alternative YouTube frontend. No JavaScript required, no tracking.",
+          "imp": "Import subscriptions via OPML file from YouTube Takeout data",
+          "url": "https://invidious.io"
+        },
+        {
+          "id": "odysee",
+          "name": "Odysee / LBRY",
+          "icon": "🟣",
+          "priv": 4,
+          "cost": "Free",
+          "ease": 4,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "Decentralized video platform. Blockchain-backed. Growing creator base.",
+          "imp": "YouTube Sync feature can auto-mirror your channel to Odysee",
+          "url": "https://odysee.com"
+        },
+        {
+          "id": "rumble",
+          "name": "Rumble",
+          "icon": "🟢",
+          "priv": 3,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Web, iOS, Android",
+          "desc": "Free speech video platform. Growing creator ecosystem with monetization options.",
+          "imp": "Create account and manually re-upload or subscribe to migrated creators",
+          "url": "https://rumble.com"
+        },
+        {
+          "id": "kick",
+          "name": "Kick",
+          "icon": "🟢",
+          "priv": 3,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Web, iOS, Android",
+          "desc": "Live streaming and video platform. Creator-friendly revenue split. Growing community.",
+          "imp": "Create account and follow your preferred creators on the platform",
+          "url": "https://kick.com"
+        }
+      ]
+    },
+    {
+      "id": "gdocs",
+      "name": "Docs/Sheets/Slides",
+      "icon": "📝",
+      "cat": "Productivity",
+      "diff": "Medium",
+      "alts": [
+        {
+          "id": "libreoffice",
+          "name": "LibreOffice",
+          "icon": "📄",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Windows, Mac, Linux",
+          "desc": "Full open-source office suite. Excellent MS Office compatibility.",
+          "imp": "Google Takeout exports Docs as .docx, Sheets as .xlsx — open directly",
+          "url": "https://www.libreoffice.org/download/"
+        },
+        {
+          "id": "cryptpad",
+          "name": "CryptPad",
+          "icon": "🔐",
+          "priv": 5,
+          "cost": "Free / €5+/mo",
+          "ease": 4,
+          "plat": "Web",
+          "desc": "Zero-knowledge encrypted collaborative suite. Docs, sheets, presentations.",
+          "imp": "Upload exported files to CryptPad Drive.",
+          "url": "https://cryptpad.fr"
+        },
+        {
+          "id": "onlyoffice",
+          "name": "ONLYOFFICE",
+          "icon": "🟦",
+          "priv": 4,
+          "cost": "Free (self-hosted)",
+          "ease": 4,
+          "plat": "Web, Windows, Mac, Linux",
+          "desc": "Full office suite compatible with MS formats. Self-hostable. Real-time collab.",
+          "imp": "Upload .docx/.xlsx/.pptx files from Takeout export directly",
+          "url": "https://www.onlyoffice.com"
+        }
+      ]
+    },
+    {
+      "id": "gmeet",
+      "name": "Google Meet",
+      "icon": "📹",
+      "cat": "Communication",
+      "diff": "Easy",
+      "alts": [
+        {
+          "id": "jitsi",
+          "name": "Jitsi Meet",
+          "icon": "📹",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "Open-source video conferencing. No account required. E2E encryption available.",
+          "imp": "No migration needed — just start using meet.jit.si or self-host",
+          "url": "https://meet.jit.si"
+        },
+        {
+          "id": "signal_video",
+          "name": "Signal (Video)",
+          "icon": "💬",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "iOS, Android, Desktop",
+          "desc": "E2E encrypted video calls for up to 50 people. Gold standard for secure comms.",
+          "imp": "Install Signal, verify phone number. Group video calls available.",
+          "url": "https://signal.org/download/"
+        },
+        {
+          "id": "element",
+          "name": "Element (Matrix)",
+          "icon": "🟢",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 3,
+          "plat": "Web, iOS, Android, Desktop",
+          "desc": "Decentralized Matrix-based conferencing. Self-hostable, federated.",
+          "imp": "Create account on matrix.org or self-hosted server",
+          "url": "https://element.io"
+        }
+      ]
+    },
+    {
+      "id": "gkeep",
+      "name": "Google Keep",
+      "icon": "📌",
+      "cat": "Productivity",
+      "diff": "Easy",
+      "alts": [
+        {
+          "id": "standardnotes",
+          "name": "Standard Notes",
+          "icon": "🔒",
+          "priv": 5,
+          "cost": "Free / $5+/mo",
+          "ease": 5,
+          "plat": "All platforms",
+          "desc": "E2E encrypted notes. 100% open source. Longevity focused (100-year company).",
+          "imp": "Import from Google Keep JSON export via Standard Notes importer",
+          "url": "https://standardnotes.com"
+        },
+        {
+          "id": "joplin",
+          "name": "Joplin",
+          "icon": "📓",
+          "priv": 5,
+          "cost": "Free / €3+/mo sync",
+          "ease": 4,
+          "plat": "All platforms",
+          "desc": "Open-source Markdown note-taking. E2E encrypted sync. Evernote import.",
+          "imp": "File → Import → Select Google Keep export files",
+          "url": "https://joplinapp.org"
+        },
+        {
+          "id": "obsidian",
+          "name": "Obsidian",
+          "icon": "💎",
+          "priv": 4,
+          "cost": "Free / $5+/mo sync",
+          "ease": 4,
+          "plat": "All platforms",
+          "desc": "Powerful knowledge base. Local-first Markdown files. Plugin ecosystem.",
+          "imp": "Convert Keep notes to Markdown, place in Obsidian vault folder",
+          "url": "https://obsidian.md"
+        }
+      ]
+    },
+    {
+      "id": "gauth",
+      "name": "Google Authenticator",
+      "icon": "🔑",
+      "cat": "Security",
+      "diff": "Medium",
+      "alts": [
+        {
+          "id": "aegis",
+          "name": "Aegis",
+          "icon": "🛡",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "Android",
+          "desc": "Open-source 2FA app. Encrypted vault, biometric unlock, backup/restore.",
+          "imp": "Export from Google Authenticator → Import into Aegis",
+          "url": "https://getaegis.app"
+        },
+        {
+          "id": "enteauth",
+          "name": "Ente Auth",
+          "icon": "🟢",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 5,
+          "plat": "iOS, Android, Web, Desktop",
+          "desc": "E2E encrypted 2FA with cloud backup. Cross-platform. Open source.",
+          "imp": "Scan QR codes or import from Google Authenticator export",
+          "url": "https://ente.io/auth/"
+        },
+        {
+          "id": "bitwarden_auth",
+          "name": "Bitwarden (TOTP)",
+          "icon": "🔵",
+          "priv": 5,
+          "cost": "$10/yr",
+          "ease": 5,
+          "plat": "All platforms",
+          "desc": "Built-in TOTP authenticator in Bitwarden password manager. All in one place.",
+          "imp": "Add TOTP secret keys to existing Bitwarden vault entries",
+          "url": "https://bitwarden.com"
+        }
+      ]
+    },
+    {
+      "id": "gpass",
+      "name": "Chrome Passwords",
+      "icon": "🔒",
+      "cat": "Security",
+      "diff": "Medium",
+      "alts": [
+        {
+          "id": "bitwarden",
+          "name": "Bitwarden",
+          "icon": "🔵",
+          "priv": 5,
+          "cost": "Free / $10/yr",
+          "ease": 5,
+          "plat": "All platforms + extensions",
+          "desc": "Open-source password manager. Cloud sync, self-hostable. Community #1.",
+          "imp": "Export Chrome passwords as CSV → Bitwarden → Tools → Import Data",
+          "url": "https://vault.bitwarden.com/#/register"
+        },
+        {
+          "id": "keepassxc",
+          "name": "KeePassXC",
+          "icon": "🟢",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 3,
+          "plat": "Windows, Mac, Linux",
+          "desc": "Offline-first open-source password manager. Local encrypted database.",
+          "imp": "Export Chrome passwords as CSV → KeePassXC → Import from CSV",
+          "url": "https://keepassxc.org/download/"
+        },
+        {
+          "id": "protonpass",
+          "name": "Proton Pass",
+          "icon": "🟣",
+          "priv": 5,
+          "cost": "Free / $2+/mo",
+          "ease": 5,
+          "plat": "All platforms + extensions",
+          "desc": "E2E encrypted password manager from Proton. Integrates with Proton ecosystem.",
+          "imp": "Export Chrome passwords as CSV → Proton Pass → Import",
+          "url": "https://proton.me/pass"
+        }
+      ]
+    },
+    {
+      "id": "gtranslate",
+      "name": "Google Translate",
+      "icon": "🌐",
+      "cat": "Utilities",
+      "diff": "Easy",
+      "alts": [
+        {
+          "id": "deepl",
+          "name": "DeepL",
+          "icon": "🔵",
+          "priv": 4,
+          "cost": "Free / $9+/mo",
+          "ease": 5,
+          "plat": "Web, Desktop, iOS, Android",
+          "desc": "Superior translation quality. European privacy standards.",
+          "imp": "Bookmark deepl.com or install desktop app",
+          "url": "https://www.deepl.com"
+        },
+        {
+          "id": "libretranslate",
+          "name": "LibreTranslate",
+          "icon": "🟢",
+          "priv": 5,
+          "cost": "Free (self-hosted)",
+          "ease": 3,
+          "plat": "Web, API",
+          "desc": "Open-source machine translation. Self-hostable. No tracking.",
+          "imp": "Use web interface or self-host your own instance",
+          "url": "https://libretranslate.com"
+        }
+      ]
+    },
+    {
+      "id": "gplay",
+      "name": "Google Play Store",
+      "icon": "🎬",
+      "cat": "Android",
+      "diff": "Medium",
+      "alts": [
+        {
+          "id": "fdroid",
+          "name": "F-Droid",
+          "icon": "🤖",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 4,
+          "plat": "Android",
+          "desc": "FOSS app repository. All apps are free and open source. No tracking.",
+          "imp": "Download F-Droid APK from f-droid.org → Install → Browse apps",
+          "url": "https://f-droid.org"
+        },
+        {
+          "id": "aurora",
+          "name": "Aurora Store",
+          "icon": "🌌",
+          "priv": 4,
+          "cost": "Free",
+          "ease": 4,
+          "plat": "Android",
+          "desc": "Access Play Store apps without a Google account. Anonymous downloads.",
+          "imp": "Install from F-Droid → Use anonymous login → Download apps",
+          "url": "https://auroraoss.com"
+        }
+      ]
+    },
+    {
+      "id": "gandroid",
+      "name": "Android OS (Stock)",
+      "icon": "📱",
+      "cat": "Android",
+      "diff": "Hard",
+      "alts": [
+        {
+          "id": "grapheneos",
+          "name": "GrapheneOS",
+          "icon": "🔒",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 2,
+          "plat": "Google Pixel only",
+          "desc": "Hardened Android. Maximum security & privacy. Sandboxed Google Play available.",
+          "imp": "Web installer at grapheneos.org. Requires unlocked Pixel.",
+          "url": "https://grapheneos.org/install/web"
+        },
+        {
+          "id": "lineageos",
+          "name": "LineageOS",
+          "icon": "🟢",
+          "priv": 4,
+          "cost": "Free",
+          "ease": 2,
+          "plat": "Many Android devices",
+          "desc": "Open-source Android ROM. Wide device support. No Google services by default.",
+          "imp": "Check device support → Unlock bootloader → Flash via recovery",
+          "url": "https://lineageos.org"
+        },
+        {
+          "id": "calyxos",
+          "name": "CalyxOS",
+          "icon": "🌿",
+          "priv": 5,
+          "cost": "Free",
+          "ease": 3,
+          "plat": "Pixel, Fairphone",
+          "desc": "Privacy-focused Android with microG. Good balance of privacy and usability.",
+          "imp": "Flash via CalyxOS installer tool for supported devices",
+          "url": "https://calyxos.org"
+        }
+      ]
+    }
+  ]
+}
