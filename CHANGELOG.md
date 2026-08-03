@@ -18,6 +18,7 @@ All notable changes to DeGoogler will be documented in this file.
 - Added: Reverse-mode email migration checklist for tracked and manually added services.
 - Added: Web App localization selector with English, Spanish, German, and French shell/tracker translations.
 - Added: Nginx-based Docker image for self-hosting the static Web App.
+- Added: Thunderbird-based local Gmail archive migration step for destinations without direct MBOX import.
 
 ## [v0.0.1] - %Y->- (HEAD -> main, origin/main, origin/HEAD)
 

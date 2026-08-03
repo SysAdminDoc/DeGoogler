@@ -84,6 +84,7 @@ docker run --rm -p 8080:80 degoogler:local
 | Photos Metadata Fix | Restores metadata with an EXIF → JSON → Picasa → filename → filesystem-time cascade, robust Takeout sidecar matching, XMP fallback, and bundled ExifTool 13.59. |
 | Password Converter | Converts Chrome password CSV to Bitwarden, KeePass, 1Password, or Proton Pass format. Optional secure-delete of source. |
 | Email (MBOX) Processor | Splits Gmail MBOX files into individual EML files with label-based folder organization |
+| Thunderbird Archive Path | Wizard checklist for local Gmail-to-new-mailbox migration when direct MBOX import is unavailable |
 | Bookmark Converter | Converts Chrome JSON bookmarks to Netscape HTML for Firefox/Brave/LibreWolf. Auto-detects Chrome installation. |
 | Contacts Processor | Cleans Google Contacts VCF exports: deduplication, phone number standardization, encoding fixes |
 | Takeout Export Converters | Converts Keep notes to labeled Markdown, Fit data to Apple Health XML/TCX, saved places to GeoJSON/GPX/KML, and Chat/Hangouts MBOX to Matrix/Signal-shaped JSON |
