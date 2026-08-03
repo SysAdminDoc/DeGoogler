@@ -15,7 +15,7 @@ https://sysadmindoc.github.io/DeGoogler/
 DeGoogler is a three-part toolkit that walks anyone through the process of migrating away from Google services:
 
 1. **DeGoogler Web App** (`degoogler.jsx`) — Interactive React wizard that guides you through service inventory, alternative selection, and generates a phased migration plan
-2. **DeGoogler Toolkit** (`DeGoogler-Toolkit.ps1`) — PowerShell WPF desktop app that handles the heavy data processing: extracting Takeout archives, fixing photo metadata, converting passwords, processing emails, and more
+2. **DeGoogler Toolkit** (`DeGoogler-Toolkit.ps1` + `DeGoogler-Toolkit.Core.ps1`) — PowerShell WPF desktop app that handles the heavy data processing: extracting Takeout archives, fixing photo metadata, converting passwords, processing emails, and more
 3. **DeGoogler Browser Assistant** (`DeGoogler-BrowserAssistant.user.js`) — Tampermonkey userscript that adds automation overlays on Google Takeout, YouTube, Gmail, and Google Account pages
 
 ## Quick Start
@@ -25,10 +25,14 @@ Open `degoogler.jsx` as a React artifact or deploy to any static hosting.
 
 ### PowerShell Toolkit
 ```powershell
-# Download and run (auto-elevates, auto-installs dependencies)
-irm https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-Toolkit.ps1 | iex
+# Download the two-file toolkit and run (auto-elevates, auto-installs dependencies)
+$degooglerDir = Join-Path $env:LOCALAPPDATA 'DeGoogler'
+New-Item -ItemType Directory -Path $degooglerDir -Force | Out-Null
+Invoke-WebRequest https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-Toolkit.ps1 -OutFile (Join-Path $degooglerDir 'DeGoogler-Toolkit.ps1')
+Invoke-WebRequest https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-Toolkit.Core.ps1 -OutFile (Join-Path $degooglerDir 'DeGoogler-Toolkit.Core.ps1')
+& (Join-Path $degooglerDir 'DeGoogler-Toolkit.ps1')
 ```
-Or download `DeGoogler-Toolkit.ps1` and right-click → Run with PowerShell.
+Or download the toolkit files from the repository/release bundle, keep `DeGoogler-Toolkit.Core.ps1` beside `DeGoogler-Toolkit.ps1`, and right-click the main script → Run with PowerShell.
 
 ### Browser Assistant (Userscript)
 1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/)
@@ -58,6 +62,7 @@ Or download `DeGoogler-Toolkit.ps1` and right-click → Run with PowerShell.
 | Email (MBOX) Processor | Splits Gmail MBOX files into individual EML files with label-based folder organization |
 | Bookmark Converter | Converts Chrome JSON bookmarks to Netscape HTML for Firefox/Brave/LibreWolf. Auto-detects Chrome installation. |
 | Contacts Processor | Cleans Google Contacts VCF exports: deduplication, phone number standardization, encoding fixes |
+| Takeout Export Converters | Converts Keep notes to labeled Markdown, Fit data to Apple Health XML/TCX, saved places to GeoJSON/GPX/KML, and Chat/Hangouts MBOX to Matrix/Signal-shaped JSON |
 
 ### Browser Assistant — Userscript
 
@@ -122,6 +127,7 @@ Or download `DeGoogler-Toolkit.ps1` and right-click → Run with PowerShell.
 - PowerShell 5.1+
 - Admin rights (auto-elevates)
 - ExifTool (auto-downloaded for Photos Metadata Fix)
+- `DeGoogler-Toolkit.Core.ps1` beside the main script (included in the repository/release bundle)
 
 **Browser Assistant:**
 - Tampermonkey or Violentmonkey browser extension
@@ -138,6 +144,7 @@ Or download `DeGoogler-Toolkit.ps1` and right-click → Run with PowerShell.
 - The userscript only runs on Google domains
 - Password converter includes optional secure-delete (cryptographic overwrite) of source CSV
 - No tracking, no analytics, no telemetry
+- Long-running archive, photo, and MBOX operations checkpoint completed units in `%LOCALAPPDATA%\DeGoogler\logs\*.progress.json` so interrupted runs can resume.
 
 ## FAQ / Troubleshooting
 

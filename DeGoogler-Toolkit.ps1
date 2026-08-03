@@ -19,6 +19,14 @@
     0.0.2
 #>
 
+$script:toolkitRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+$script:corePath = Join-Path $script:toolkitRoot 'DeGoogler-Toolkit.Core.ps1'
+if (-not (Test-Path -LiteralPath $script:corePath)) {
+    Write-Error "Missing toolkit core: $script:corePath. Keep DeGoogler-Toolkit.Core.ps1 beside this script."
+    exit 1
+}
+. $script:corePath
+
 # ── Auto-elevate ──
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -139,7 +147,11 @@ function Write-Checkpoint {
     try {
         $dir = Split-Path $Path
         if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-        ($State | ConvertTo-Json -Depth 5) | Set-Content -LiteralPath $Path -Encoding UTF8
+        $temp = "$Path.$([guid]::NewGuid().ToString('N')).tmp"
+        $utf8 = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($temp, ($State | ConvertTo-Json -Depth 5), $utf8)
+        Move-Item -LiteralPath $temp -Destination $Path -Force
+        if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue }
     } catch {}
 }
 
@@ -156,6 +168,48 @@ function Test-CheckpointDone {
     if ($done -is [hashtable]) { return $done.ContainsKey($Key) }
     return ($done.PSObject.Properties.Name -contains $Key)
 }
+
+$script:asyncCheckpointSource = @'
+function Read-DgAsyncCheckpoint {
+    param([string]$Path)
+    $state = @{ version = 1; done = @{} }
+    if (-not (Test-Path -LiteralPath $Path)) { return $state }
+    try {
+        $json = Get-Content -LiteralPath $Path -Raw -ErrorAction Stop | ConvertFrom-Json
+        foreach ($property in $json.PSObject.Properties) {
+            if ($property.Name -eq 'done') {
+                $done = @{}
+                foreach ($doneProperty in $property.Value.PSObject.Properties) { $done[$doneProperty.Name] = $doneProperty.Value }
+                $state.done = $done
+            } else { $state[$property.Name] = $property.Value }
+        }
+    } catch {}
+    return $state
+}
+function Write-DgAsyncCheckpoint {
+    param([string]$Path, [hashtable]$State)
+    try {
+        $dir = Split-Path -Parent $Path
+        if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        $temp = "$Path.$([guid]::NewGuid().ToString('N')).tmp"
+        $utf8 = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($temp, ($State | ConvertTo-Json -Depth 6), $utf8)
+        Move-Item -LiteralPath $temp -Destination $Path -Force
+        if (Test-Path -LiteralPath $temp) { Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue }
+    } catch {}
+}
+function Set-DgAsyncCheckpointDone {
+    param([hashtable]$State, [string]$Key)
+    if (-not $State.ContainsKey('done') -or $null -eq $State.done) { $State.done = @{} }
+    $State.done[$Key] = (Get-Date -Format 'o')
+}
+function Test-DgAsyncCheckpointDone {
+    param([hashtable]$State, [string]$Key)
+    if (-not $State.ContainsKey('done') -or $null -eq $State.done) { return $false }
+    if ($State.done -is [hashtable]) { return $State.done.ContainsKey($Key) }
+    return ($State.done.PSObject.Properties.Name -contains $Key)
+}
+'@
 
 # ── XAML UI ──
 $xaml = @'
@@ -580,6 +634,11 @@ function Start-AsyncTask {
     param([scriptblock]$ScriptBlock, [object[]]$Arguments = @(), [scriptblock]$OnComplete)
 
     $ps = [PowerShell]::Create()
+    $ps.AddScript($script:asyncCheckpointSource) | Out-Null
+    if (Test-Path -LiteralPath $script:corePath) {
+        $coreSource = [System.IO.File]::ReadAllText($script:corePath)
+        $ps.AddScript($coreSource) | Out-Null
+    }
     $ps.AddScript($ScriptBlock) | Out-Null
     foreach ($arg in $Arguments) { $ps.AddArgument($arg) | Out-Null }
     $handle = $ps.BeginInvoke()
@@ -640,6 +699,7 @@ $controls['btnTakeoutRun'].Add_Click({
     $deleteZips = $controls['chkTakeoutDeleteZips'].IsChecked
     $dryRun = $controls['chkTakeoutDryRun'].IsChecked
     $files = $script:takeoutFiles
+    $checkpointPath = Get-CheckpointPath -Tool 'TakeoutExtractor' -InputPath (($files -join '|') + '|' + $outputDir)
 
     if ($dryRun) {
         Write-Log "[DRY RUN] Takeout Extractor - no files will be written" "WARN"
@@ -662,12 +722,18 @@ $controls['btnTakeoutRun'].Add_Click({
     $controls['btnTakeoutRun'].IsEnabled = $false
 
     Start-AsyncTask -ScriptBlock {
-        param($files, $outputDir, $deleteZips)
+        param($files, $outputDir, $deleteZips, $checkpointPath)
         if (-not (Test-Path $outputDir)) { New-Item -ItemType Directory -Path $outputDir -Force | Out-Null }
+        $checkpoint = Read-DgAsyncCheckpoint $checkpointPath
         $results = @()
         for ($i = 0; $i -lt $files.Count; $i++) {
             $file = $files[$i]
-            $tempDir = Join-Path $env:TEMP "degoogler_extract_$i"
+            $fileKey = [System.IO.Path]::GetFullPath($file)
+            if (Test-DgAsyncCheckpointDone $checkpoint $fileKey) {
+                $results += "SKIP: $([System.IO.Path]::GetFileName($file)) (checkpoint)"
+                continue
+            }
+            $tempDir = Join-Path $env:TEMP ("degoogler_extract_" + [guid]::NewGuid().ToString('N'))
             try {
                 Expand-Archive -Path $file -DestinationPath $tempDir -Force
                 # Organize by subfolder names (Takeout/service_name/...)
@@ -692,12 +758,15 @@ $controls['btnTakeoutRun'].Add_Click({
                 }
                 Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
                 if ($deleteZips) { Remove-Item $file -Force -ErrorAction SilentlyContinue }
+                Set-DgAsyncCheckpointDone $checkpoint $fileKey
+                Write-DgAsyncCheckpoint $checkpointPath $checkpoint
             } catch {
                 $results += "ERROR: $($_.Exception.Message)"
+                Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
         return $results
-    } -Arguments @(,$files), $outputDir, $deleteZips -OnComplete {
+    } -Arguments @(,$files), $outputDir, $deleteZips, $checkpointPath -OnComplete {
         param($result, $errors)
         $controls['btnTakeoutRun'].IsEnabled = $true
         Set-Progress 100 "Done"
@@ -753,6 +822,7 @@ $controls['btnPhotosRun'].Add_Click({
     $fixDates = $controls['chkPhotosFixDates'].IsChecked
     $recursive = $controls['chkPhotosRecursive'].IsChecked
     $dryRun = $controls['chkPhotosDryRun'].IsChecked
+    $checkpointPath = Get-CheckpointPath -Tool 'PhotosMetadata' -InputPath $photosDir
 
     if ($dryRun) {
         Write-Log "[DRY RUN] Photos Metadata Restorer - no files will be modified" "WARN"
@@ -782,9 +852,10 @@ $controls['btnPhotosRun'].Add_Click({
     $controls['btnPhotosRun'].IsEnabled = $false
 
     Start-AsyncTask -ScriptBlock {
-        param($photosDir, $deleteJson, $fixDates, $recursive)
+        param($photosDir, $deleteJson, $fixDates, $recursive, $checkpointPath)
         $exifPath = Join-Path $env:LOCALAPPDATA "DeGoogler\exiftool.exe"
         $useExif = Test-Path $exifPath
+        $checkpoint = Read-DgAsyncCheckpoint $checkpointPath
 
         $searchOpt = if ($recursive) { [System.IO.SearchOption]::AllDirectories } else { [System.IO.SearchOption]::TopDirectoryOnly }
         $extensions = @('.jpg','.jpeg','.png','.gif','.mp4','.mov','.heic','.webp','.tiff','.bmp')
@@ -794,6 +865,8 @@ $controls['btnPhotosRun'].Add_Click({
         $processed = 0; $fixed = 0; $failed = 0; $total = $allFiles.Count
 
         foreach ($mediaFile in $allFiles) {
+            $fileKey = [System.IO.Path]::GetFullPath($mediaFile)
+            if (Test-DgAsyncCheckpointDone $checkpoint $fileKey) { continue }
             $processed++
             $baseName = [System.IO.Path]::GetFileName($mediaFile)
             # Google Takeout JSON sidecar naming patterns
@@ -811,7 +884,11 @@ $controls['btnPhotosRun'].Add_Click({
             }
 
             $jsonFile = $jsonCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-            if (-not $jsonFile) { continue }
+            if (-not $jsonFile) {
+                Set-DgAsyncCheckpointDone $checkpoint $fileKey
+                Write-DgAsyncCheckpoint $checkpointPath $checkpoint
+                continue
+            }
 
             try {
                 $json = Get-Content $jsonFile -Raw | ConvertFrom-Json
@@ -862,12 +939,14 @@ $controls['btnPhotosRun'].Add_Click({
                 if ($deleteJson -and $jsonFile) {
                     Remove-Item $jsonFile -Force -ErrorAction SilentlyContinue
                 }
+                Set-DgAsyncCheckpointDone $checkpoint $fileKey
+                Write-DgAsyncCheckpoint $checkpointPath $checkpoint
             } catch {
                 $failed++
             }
         }
         return @{ Total = $total; Fixed = $fixed; Failed = $failed }
-    } -Arguments $photosDir, $deleteJson, $fixDates, $recursive -OnComplete {
+    } -Arguments $photosDir, $deleteJson, $fixDates, $recursive, $checkpointPath -OnComplete {
         param($result, $errors)
         $controls['btnPhotosRun'].IsEnabled = $true
         Set-Progress 100 "Done"
@@ -1025,6 +1104,7 @@ $controls['btnEmailRun'].Add_Click({
 
     $preserveLabels = $controls['chkEmailPreserveLabels'].IsChecked
     $dryRun = $controls['chkEmailDryRun'].IsChecked
+    $checkpointPath = Get-CheckpointPath -Tool 'MboxProcessor' -InputPath ($inputFile + '|' + $outputDir)
 
     if ($dryRun) {
         Write-Log "[DRY RUN] Email MBOX Processor - no files will be written" "WARN"
@@ -1047,26 +1127,34 @@ $controls['btnEmailRun'].Add_Click({
     $controls['btnEmailRun'].IsEnabled = $false
 
     Start-AsyncTask -ScriptBlock {
-        param($inputFile, $outputDir, $preserveLabels)
+        param($inputFile, $outputDir, $preserveLabels, $checkpointPath)
+        $checkpoint = Read-DgAsyncCheckpoint $checkpointPath
         $reader = [System.IO.StreamReader]::new($inputFile, [System.Text.Encoding]::UTF8)
         $emailCount = 0
         $currentEmail = New-Object System.Text.StringBuilder
         $currentLabel = "Inbox"
         $inEmail = $false
 
+        function Save-DgMboxMessage {
+            param([string]$RawMessage, [string]$Label, [int]$Number)
+            $key = "message:$Number"
+            $safeLabel = if ($preserveLabels -and $Label) { $Label -replace '[\\/:*?"<>|]', '_' } else { '' }
+            $targetDir = if ($safeLabel) { Join-Path $outputDir $safeLabel } else { $outputDir }
+            if (-not (Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
+            $emlPath = Join-Path $targetDir "email_$($Number.ToString('D6')).eml"
+            if (-not (Test-DgAsyncCheckpointDone $checkpoint $key) -and -not (Test-Path -LiteralPath $emlPath)) {
+                [System.IO.File]::WriteAllText($emlPath, $RawMessage, [System.Text.Encoding]::UTF8)
+            }
+            Set-DgAsyncCheckpointDone $checkpoint $key
+            Write-DgAsyncCheckpoint $checkpointPath $checkpoint
+        }
+
         while ($null -ne ($line = $reader.ReadLine())) {
             if ($line -match '^From ') {
                 # Save previous email
                 if ($inEmail -and $currentEmail.Length -gt 0) {
                     $emailCount++
-                    $targetDir = $outputDir
-                    if ($preserveLabels -and $currentLabel) {
-                        $safeLabel = $currentLabel -replace '[\\/:*?"<>|]', '_'
-                        $targetDir = Join-Path $outputDir $safeLabel
-                    }
-                    if (-not (Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
-                    $emlPath = Join-Path $targetDir "email_$($emailCount.ToString('D6')).eml"
-                    [System.IO.File]::WriteAllText($emlPath, $currentEmail.ToString(), [System.Text.Encoding]::UTF8)
+                    Save-DgMboxMessage -RawMessage $currentEmail.ToString() -Label $currentLabel -Number $emailCount
                 }
                 $currentEmail = New-Object System.Text.StringBuilder
                 $currentLabel = "Inbox"
@@ -1085,19 +1173,12 @@ $controls['btnEmailRun'].Add_Click({
         # Save last email
         if ($inEmail -and $currentEmail.Length -gt 0) {
             $emailCount++
-            $targetDir = $outputDir
-            if ($preserveLabels -and $currentLabel) {
-                $safeLabel = $currentLabel -replace '[\\/:*?"<>|]', '_'
-                $targetDir = Join-Path $outputDir $safeLabel
-            }
-            if (-not (Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
-            $emlPath = Join-Path $targetDir "email_$($emailCount.ToString('D6')).eml"
-            [System.IO.File]::WriteAllText($emlPath, $currentEmail.ToString(), [System.Text.Encoding]::UTF8)
+            Save-DgMboxMessage -RawMessage $currentEmail.ToString() -Label $currentLabel -Number $emailCount
         }
         $reader.Close()
         $reader.Dispose()
         return @{ Count = $emailCount }
-    } -Arguments $inputFile, $outputDir, $preserveLabels -OnComplete {
+    } -Arguments $inputFile, $outputDir, $preserveLabels, $checkpointPath -OnComplete {
         param($result, $errors)
         $controls['btnEmailRun'].IsEnabled = $true
         Set-Progress 100 "Done"
@@ -1356,6 +1437,101 @@ $controls['btnContactsRun'].Add_Click({
         Set-Progress 100 "Done"
     } catch {
         Write-Log "Error processing contacts: $_" "ERROR"
+    }
+})
+
+# ═══════════════════════════════════════════════════
+# TOOL 7: Takeout Export Converters
+# ═══════════════════════════════════════════════════
+
+function Get-ConverterDefinition {
+    param([int]$Index)
+    switch ($Index) {
+        0 { return @{ Name = 'Convert-DgKeepTakeout'; Label = 'Keep to Markdown'; Extensions = @('.json') } }
+        1 { return @{ Name = 'Convert-DgFitTakeout'; Label = 'Fit to Apple Health XML / TCX'; Extensions = @('.json') } }
+        2 { return @{ Name = 'Convert-DgMapsSavedPlaces'; Label = 'Maps saved places to GeoJSON / GPX / KML'; Extensions = @('.json','.csv') } }
+        3 { return @{ Name = 'Convert-DgChatMbox'; Label = 'Chat or Hangouts MBOX to JSON'; Extensions = @('.mbox','.mbx','.txt') } }
+        default { return @{ Name = 'Convert-DgKeepTakeout'; Label = 'Keep to Markdown'; Extensions = @('.json') } }
+    }
+}
+
+$controls['btnConvertersBrowse'].Add_Click({
+    $definition = Get-ConverterDefinition $controls['cmbConvertersType'].SelectedIndex
+    $selection = $null
+    if ($controls['cmbConvertersType'].SelectedIndex -eq 0 -or $controls['cmbConvertersType'].SelectedIndex -eq 2) {
+        $selection = Get-FolderDialog -Description ("Select input folder for " + $definition.Label)
+    } else {
+        $filter = switch ($controls['cmbConvertersType'].SelectedIndex) {
+            1 { 'Fit exports (*.json)|*.json|All Files (*.*)|*.*' }
+            3 { 'MBOX exports (*.mbox;*.mbx;*.txt)|*.mbox;*.mbx;*.txt|All Files (*.*)|*.*' }
+            default { 'All Files (*.*)|*.*' }
+        }
+        $selection = Get-FileDialog -Filter $filter -Title ("Select input for " + $definition.Label)
+    }
+    if ($selection) {
+        $controls['txtConvertersInput'].Text = $selection
+        $controls['txtConvertersInput'].Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#e0e0e0')
+        try {
+            $count = @(Get-DgInputFiles -InputPath $selection -Extensions $definition.Extensions).Count
+            Write-Log "Selected converter input with $count matching file(s)"
+        } catch { Write-Log "Selected input could not be scanned: $_" "WARN" }
+    }
+})
+
+$controls['btnConvertersOutputBrowse'].Add_Click({
+    $folder = Get-FolderDialog -Description 'Select output folder for converted data'
+    if ($folder) {
+        $controls['txtConvertersOutput'].Text = $folder
+        $controls['txtConvertersOutput'].Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#e0e0e0')
+    }
+})
+
+$controls['btnConvertersRun'].Add_Click({
+    $definition = Get-ConverterDefinition $controls['cmbConvertersType'].SelectedIndex
+    $inputPath = $controls['txtConvertersInput'].Text
+    if ($inputPath -match 'Select input' -or -not (Test-Path -LiteralPath $inputPath)) {
+        Write-Log 'No converter input selected' 'WARN'; return
+    }
+    $outputPath = $controls['txtConvertersOutput'].Text
+    if ($outputPath -match 'Select output') {
+        $outputPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'DeGoogler_Converted'
+        $controls['txtConvertersOutput'].Text = $outputPath
+    }
+    $dryRun = $controls['chkConvertersDryRun'].IsChecked
+    try { $matchingFiles = @(Get-DgInputFiles -InputPath $inputPath -Extensions $definition.Extensions) } catch { Write-Log "Cannot read converter input: $_" 'ERROR'; return }
+    if ($matchingFiles.Count -eq 0) { Write-Log "No matching input files found for $($definition.Label)" 'WARN'; return }
+
+    if ($dryRun) {
+        Write-Log "[DRY RUN] $($definition.Label) - no files will be written" 'WARN'
+        Write-Log "[DRY RUN] Input files: $($matchingFiles.Count) | Output folder: $outputPath"
+        Write-Log '[DRY RUN] Dry run complete. No files were modified.' 'OK'
+        Write-JsonLog -Tool 'ExportConverter' -Action 'DryRun' -Message 'Converter dry run' -Level 'INFO' -Data @{ converter = $definition.Label; inputFiles = $matchingFiles.Count; output = $outputPath }
+        Set-Progress 100 'Dry Run Complete'
+        return
+    }
+
+    Write-Log "Starting $($definition.Label)..."
+    Write-JsonLog -Tool 'ExportConverter' -Action 'Start' -Message 'Converter started' -Level 'INFO' -Data @{ converter = $definition.Label; inputFiles = $matchingFiles.Count; output = $outputPath }
+    Set-Progress 0 'Converting...'
+    $controls['btnConvertersRun'].IsEnabled = $false
+    Start-AsyncTask -ScriptBlock {
+        param($functionName, $source, $target)
+        & $functionName -InputPath $source -OutputPath $target
+    } -Arguments $definition.Name, $inputPath, $outputPath -OnComplete {
+        param($result, $errors)
+        $controls['btnConvertersRun'].IsEnabled = $true
+        if ($errors) { foreach ($e in $errors) { Write-Log "Error: $e" 'ERROR' } }
+        $summary = @($result | Where-Object { $_ -and $_.PSObject.Properties['Converter'] } | Select-Object -Last 1)
+        if ($summary.Count -gt 0) {
+            $item = $summary[0]
+            $count = if ($item.Written) { $item.Written } elseif ($item.Records -ne $null) { $item.Records } else { 0 }
+            Write-Log "$($definition.Label) complete ($count output unit(s))" 'OK'
+            Write-JsonLog -Tool 'ExportConverter' -Action 'Complete' -Message 'Converter finished' -Level 'OK' -Data @{ converter = $definition.Label; outputUnits = $count; output = $item.Output }
+            Set-Progress 100 'Done'
+        } elseif (-not $errors) {
+            Write-Log "$($definition.Label) produced no summary" 'WARN'
+            Set-Progress 0 ''
+        }
     }
 })
 
