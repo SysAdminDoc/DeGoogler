@@ -2,7 +2,7 @@
 
 All notable changes to DeGoogler will be documented in this file.
 
-## Unreleased
+## [v0.1.0] - 2026-08-03
 
 - Added: PowerShell Takeout converters for Keep Markdown, Fit Apple Health/TCX, Maps GeoJSON/GPX/KML, and Chat/Hangouts JSON exports.
 - Added: Atomic progress checkpoints for long-running Takeout, Photos, and MBOX operations.
@@ -20,7 +20,7 @@ All notable changes to DeGoogler will be documented in this file.
 - Added: Nginx-based Docker image for self-hosting the static Web App.
 - Added: Thunderbird-based local Gmail archive migration step for destinations without direct MBOX import.
 
-## [v0.0.1] - %Y->- (HEAD -> main, origin/main, origin/HEAD)
+## [v0.0.1]
 
 - Added: Add @updateURL and @downloadURL to userscripts
 - Added: Add documentation link to README

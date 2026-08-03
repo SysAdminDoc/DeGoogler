@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    DeGoogler Toolkit v0.0.2 - Google Data Migration & Processing Suite
+    DeGoogler Toolkit v0.1.0 - Google Data Migration & Processing Suite
 .DESCRIPTION
     Turnkey PowerShell WPF application that handles:
     - Google Takeout archive extraction and organization
@@ -16,7 +16,7 @@
 .AUTHOR
     SysAdminDoc
 .VERSION
-    0.0.2
+    0.1.0
 #>
 
 param(
@@ -34,7 +34,7 @@ if (-not (Test-Path -LiteralPath $script:corePath)) {
     exit 1
 }
 . $script:corePath
-$script:toolkitVersion = '0.0.7'
+$script:toolkitVersion = '0.1.0'
 
 function Register-DgProtocolHandler {
     if ([string]::IsNullOrWhiteSpace($PSCommandPath)) { throw 'Protocol registration requires running the toolkit from a .ps1 file.' }
@@ -285,7 +285,7 @@ function Test-DgAsyncCheckpointDone {
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="DeGoogler Toolkit v0.0.2" Width="920" Height="720"
+        Title="DeGoogler Toolkit v0.1.0" Width="920" Height="720"
         WindowStartupLocation="CenterScreen" Background="#1a1a2e"
         FontFamily="Segoe UI" ResizeMode="CanResizeWithGrip">
     <Window.Resources>
@@ -381,7 +381,7 @@ $xaml = @'
                     </Border>
                     <TextBlock Text="DeGoogler Toolkit" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
                     <Border Background="#252536" CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="v0.0.2" FontSize="10" Foreground="#888"/>
+                        <TextBlock Text="v0.1.0" FontSize="10" Foreground="#888"/>
                     </Border>
                 </StackPanel>
                 <StackPanel Grid.Column="2" HorizontalAlignment="Right">
