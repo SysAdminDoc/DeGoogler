@@ -14,6 +14,9 @@ All notable changes to DeGoogler will be documented in this file.
 - Added: `degoogler://` toolkit deep links and per-user protocol registration for opening a selected tool with a local path.
 - Added: GitHub Pages deployment workflow and reproducible release-bundle builder with SHA-256 manifests.
 - Added: Toolkit release-update checker and prompt that downloads only bundles verified against a published SHA-256 manifest.
+- Added: Offline Web App progress dashboard with weekly migration snapshots and priority-category completion bars.
+- Added: Reverse-mode email migration checklist for tracked and manually added services.
+- Added: Web App localization selector with English, Spanish, German, and French shell/tracker translations.
 
 ## [v0.0.1] - %Y->- (HEAD -> main, origin/main, origin/HEAD)
 

@@ -61,6 +61,9 @@ The toolkit's **Check for updates** button queries the public GitHub Releases AP
 | Alternative Database | 50+ curated privacy-respecting alternatives with ratings, cost, and platform info |
 | Migration Plan Generator | Personalized 5-phase plan based on your selections |
 | Progress Tracking | Persistent checklist across sessions with per-phase completion |
+| Progress Dashboard | Offline CSS charts for weekly migrated-service snapshots and cleared priority categories |
+| Reverse Mode | Starts from a new email and tracks confirmation, email updates, and Gmail retirement for every candidate service |
+| Localization | Web App shell, tracker, dashboard, and migration navigation in EN/ES/DE/FR |
 | Plan Export | Download full migration plan as Markdown |
 | Shared Plan Sync | Keeps the Web App and Browser Assistant migration checklist in the versioned `plan.json` shape |
 | Toolkit Deep Links | Open a selected PowerShell tool with a local path or plan file preselected via `degoogler://` |

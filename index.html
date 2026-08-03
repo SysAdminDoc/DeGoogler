@@ -41,6 +41,7 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 .sb-prof select{min-width:0;flex:1;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:var(--mono);font-size:11px;padding:7px 8px}
 .sb-prof button{width:30px;height:30px;border-radius:6px;border:1px solid var(--brd);background:var(--bg3);color:var(--mut);cursor:pointer;font-weight:800}
 .sb-prof button:hover{color:var(--txt);border-color:var(--brd2)}
+.sb-lang{padding:8px 20px;border-bottom:1px solid var(--brd);display:flex;align-items:center;gap:8px}.sb-lang label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}.sb-lang select{min-width:0;flex:1;background:var(--bg3);border:1px solid var(--brd);border-radius:6px;color:var(--txt);font-family:var(--mono);font-size:10px;padding:5px 6px}
 .sb-prog{padding:16px 20px;border-bottom:1px solid var(--brd)}
 .pbar{height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-bottom:8px}
 .pfill{height:100%;background:linear-gradient(90deg,var(--acc),var(--grn));border-radius:2px;transition:width .5s;width:0%}
@@ -120,6 +121,24 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 .tlkw:hover{border-color:var(--org);color:var(--org)}
 .temp{padding:40px 20px;text-align:center;color:var(--dim);font-size:12px}
 .tact{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.dash{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;margin-bottom:16px}
+.dash-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--acc);font-weight:700;margin-bottom:12px}
+.dash-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.dchart{background:var(--bg3);border:1px solid var(--brd);border-radius:8px;padding:12px}
+.dchart h4{font-size:10px;color:var(--mut);font-weight:600;margin-bottom:10px}
+.bar-chart{height:116px;display:flex;align-items:flex-end;gap:6px;border-bottom:1px solid var(--brd);padding:0 4px}
+.wbar{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:0}
+.wbar-fill{width:100%;max-width:22px;background:linear-gradient(180deg,var(--acc2),var(--acc));border-radius:3px 3px 0 0;min-height:2px;transition:height .25s}
+.wbar-value{font-size:8px;color:var(--mut)}.wbar-label{font-size:8px;color:var(--dim);white-space:nowrap}
+.cat-row{display:grid;grid-template-columns:92px 1fr 34px;gap:8px;align-items:center;margin:9px 0;font-size:9px;color:var(--mut)}
+.cat-track{height:6px;background:var(--bg);border-radius:3px;overflow:hidden}.cat-fill{height:100%;background:var(--grn);border-radius:3px}
+.revbox{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;padding:16px;margin-bottom:16px}
+.revhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.revhead strong{font-size:12px}
+.revnote{font-size:10px;color:var(--mut);line-height:1.5;margin-bottom:12px}
+.revform{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.revform input{background:var(--bg);border:1px solid var(--brd);border-radius:5px;color:var(--txt);font-family:var(--mono);font-size:10px;padding:7px 8px;min-width:170px;flex:1}
+.revitems{display:grid;gap:6px}.revitem{border:1px solid var(--brd);border-radius:7px;padding:9px 10px;background:var(--bg3)}
+.revitem-head{display:flex;gap:8px;align-items:center;margin-bottom:7px}.revname{font-size:11px;font-weight:600;flex:1}.revdomain{font-size:9px;color:var(--dim)}
+.revsteps{display:flex;gap:10px;flex-wrap:wrap}.revstep{font-size:9px;color:var(--mut);display:flex;align-items:center;gap:4px}.revck{accent-color:var(--grn)}
 
 /* Service picker */
 .svc{background:var(--bg2);border:1px solid var(--brd);border-radius:12px;margin-bottom:10px;overflow:hidden;transition:border-color .2s}
@@ -165,7 +184,7 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
   .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
   .mob-tog{display:flex}.main{margin-left:0}.ct{padding:60px 20px 80px}
   .tsts{grid-template-columns:repeat(2,1fr)}.hfl{flex-direction:column;align-items:center}.hfa{transform:rotate(90deg)}
-  .stl{font-size:30px}.hw h1{font-size:42px}
+  .stl{font-size:30px}.hw h1{font-size:42px}.dash-grid{grid-template-columns:1fr}.cat-row{grid-template-columns:82px 1fr 30px}
 }
 </style>
 </head>
@@ -174,6 +193,7 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 <aside class="sidebar">
 <div class="sb-brand"><div class="sb-ico">DG</div><div><div class="sb-nm">DeGoogler</div><div class="sb-ver">v0.0.7</div></div></div>
 <div class="sb-prof"><select id="profSel" aria-label="Migration profile"></select><button id="profAdd" title="Add profile">+</button></div>
+<div class="sb-lang"><label for="langSel">Language</label><select id="langSel" aria-label="Language"><option value="en">EN</option><option value="es">ES</option><option value="de">DE</option><option value="fr">FR</option></select></div>
 <div class="sb-prog"><div class="pbar"><div class="pfill" id="gp"></div></div><div class="ptxt"><span id="gpct">0%</span><span id="gcnt">0/0</span></div></div>
 <nav class="sb-nav" id="sn"></nav>
 <div class="sb-ft">
@@ -313,22 +333,52 @@ if(!profiles.some(p=>p.id===curProfile))curProfile=profiles[0].id;
 function pkey(k){return 'dg-'+curProfile+'-'+k}
 function loadJson(key,oldKey,fallback){try{const raw=localStorage.getItem(pkey(key))||(curProfile==='personal'?localStorage.getItem(oldKey):null);return raw?JSON.parse(raw):fallback}catch{return fallback}}
 let cur=0,checks=loadJson('chk','dg-chk',{}),catFil='All',platformFil='All';
-function saveCk(){localStorage.setItem(pkey('chk'),JSON.stringify(checks));emitPlan()}
+function saveCk(){localStorage.setItem(pkey('chk'),JSON.stringify(checks));recordProgressEvent();emitPlan()}
 function switchProfile(id){curProfile=id;localStorage.setItem(PROFILE_ACTIVE_KEY,id);checks=loadJson('chk','dg-chk',{});cur=0;render()}
 function addProfile(){const id='profile-'+Date.now();profiles.push({id:id,name:'Profile '+profiles.length});localStorage.setItem(PROFILE_LIST_KEY,JSON.stringify(profiles));switchProfile(id)}
+const I18N={
+en:{language:'Language',addProfile:'Add profile',step_welcome:'Welcome',step_install:'Install Tools',step_scan:'Scan Connections',step_export:'Export Data',step_process:'Process Data',step_accounts:'New Accounts',step_migrate:'Migrate Services',step_finish:'Finish',title_welcome:'Take Back Your Digital Life',desc_welcome:'A complete open-source toolkit for leaving Google. This guide walks you through every step.',title_install:'Install the Toolkit',desc_install:'Two tools to install. The Browser Assistant automates tasks on Google pages. The PowerShell Toolkit processes your exported data on Windows.',title_scan:'Find Everything Tied to Google',desc_scan:'The step most guides skip. Every Sign in with Google login and every service using your Gmail must be migrated.',title_export:'Export Your Google Data',desc_export:'Download everything from Google Takeout. The Browser Assistant helps configure optimal settings.',title_process:'Process Your Exported Data',desc_process:'Run the PowerShell Toolkit to extract, repair, and convert Takeout data for your new services.',title_accounts:'Choose Alternatives & Import Data',desc_accounts:'Browse privacy-respecting replacements for Google services and import your processed data.',title_migrate:'Migrate Connected Services',desc_migrate:'Work through every service from Step 2. Set passwords, update emails, revoke Google access. This is the tracker.',title_finish:'Transition & Final Cutover',desc_finish:'Run old and new services in parallel, verify everything, then cut the cord.',welcome_install:'Install',welcome_scan:'Scan',welcome_export:'Export',welcome_process:'Process',welcome_switch:'Switch',welcome_migrate:'Migrate',welcome_finish:'Finish',back:'Back',continue:'Continue',required:'Required',automated:'Automated',manual:'Manual',difficulty:'Difficulty',risk:'Risk',cost:'Cost',platforms:'Platforms',signUp:'Sign Up',all:'All',critical:'Critical',important:'Important',optional:'Optional',done:'Done',total:'Total',migrated:'Migrated',inProgress:'In Progress',notStarted:'Not Started',progressDashboard:'Progress dashboard',weeklyChart:'Services migrated per week (cumulative)',categoriesCleared:'Categories cleared',reverseMode:'Reverse mode',reverseNote:'Start with a new email address and work backward through every account that can still reach Gmail. This local checklist uses scanned services plus candidates you add; it does not probe external reset flows.',newEmail:'New email address',addService:'Add service or domain',addServiceButton:'Add service',confirmNewEmail:'Confirm new email',updateEmail:'Update recovery/sign-in',removeGmail:'Remove old Gmail',complete:'complete',noReverse:'Add a service above to begin the reverse checklist.',toolkitDeepLink:'Toolkit deep link',openToolkit:'Open Toolkit',localPath:'Optional local file/folder path',exportCSV:'Export CSV',exportJSON:'Export JSON',importJSON:'Import JSON',exportPlan:'Export plan.json',exportCalendar:'Export Calendar',exportMarkdown:'Export Markdown Plan',clear:'Clear',noServices:'No services found yet.',scanStep:'Complete Step 2 to scan your Google connections. The userscript syncs data here when you visit this page.',offline:'Offline mode: cached DeGoogler files are active.'},
+es:{language:'Idioma',addProfile:'Añadir perfil',step_welcome:'Bienvenida',step_install:'Instalar herramientas',step_scan:'Escanear conexiones',step_export:'Exportar datos',step_process:'Procesar datos',step_accounts:'Nuevas cuentas',step_migrate:'Migrar servicios',step_finish:'Finalizar',title_welcome:'Recupera tu vida digital',desc_welcome:'Un kit de herramientas de código abierto para dejar Google. Esta guía recorre cada paso.',title_install:'Instala el kit',title_scan:'Encuentra todo lo vinculado a Google',title_export:'Exporta tus datos de Google',title_process:'Procesa tus datos exportados',title_accounts:'Elige alternativas e importa datos',title_migrate:'Migra los servicios conectados',title_finish:'Transición y cambio final',welcome_install:'Instalar',welcome_scan:'Escanear',welcome_export:'Exportar',welcome_process:'Procesar',welcome_switch:'Cambiar',welcome_migrate:'Migrar',welcome_finish:'Finalizar',back:'Atrás',continue:'Continuar',required:'Obligatorio',automated:'Automático',manual:'Manual',difficulty:'Dificultad',risk:'Riesgo',cost:'Coste',platforms:'Plataformas',signUp:'Registrarse',all:'Todos',critical:'Crítico',important:'Importante',optional:'Opcional',done:'Hecho',total:'Total',migrated:'Migrados',inProgress:'En curso',notStarted:'Sin iniciar',progressDashboard:'Panel de progreso',weeklyChart:'Servicios migrados por semana (acumulado)',categoriesCleared:'Categorías completadas',reverseMode:'Modo inverso',reverseNote:'Empieza con un correo nuevo y revisa cada cuenta que aún pueda enviar mensajes a Gmail. Esta lista local usa servicios detectados y candidatos añadidos por ti; no consulta flujos externos.',newEmail:'Nueva dirección de correo',addService:'Añadir servicio o dominio',addServiceButton:'Añadir servicio',confirmNewEmail:'Confirmar correo nuevo',updateEmail:'Actualizar recuperación/inicio',removeGmail:'Quitar Gmail antiguo',complete:'completos',noReverse:'Añade un servicio arriba para comenzar la lista inversa.',toolkitDeepLink:'Enlace del kit',openToolkit:'Abrir kit',localPath:'Ruta local opcional',exportCSV:'Exportar CSV',exportJSON:'Exportar JSON',importJSON:'Importar JSON',exportPlan:'Exportar plan.json',exportCalendar:'Exportar calendario',exportMarkdown:'Exportar plan Markdown',clear:'Limpiar',noServices:'Aún no hay servicios.',scanStep:'Completa el paso 2 para escanear tus conexiones. El userscript sincroniza los datos al volver aquí.',offline:'Modo sin conexión: se usan archivos almacenados en caché.'},
+de:{language:'Sprache',addProfile:'Profil hinzufügen',step_welcome:'Willkommen',step_install:'Werkzeuge installieren',step_scan:'Verbindungen prüfen',step_export:'Daten exportieren',step_process:'Daten verarbeiten',step_accounts:'Neue Konten',step_migrate:'Dienste migrieren',step_finish:'Abschluss',title_welcome:'Hol dir dein digitales Leben zurück',desc_welcome:'Ein vollständiges Open-Source-Werkzeug zum Verlassen von Google. Diese Anleitung führt durch jeden Schritt.',title_install:'Werkzeuge installieren',title_scan:'Alles mit Google verknüpfte finden',title_export:'Google-Daten exportieren',title_process:'Exportierte Daten verarbeiten',title_accounts:'Alternativen wählen und Daten importieren',title_migrate:'Verbundene Dienste migrieren',title_finish:'Übergang und endgültiger Schnitt',welcome_install:'Installieren',welcome_scan:'Prüfen',welcome_export:'Exportieren',welcome_process:'Verarbeiten',welcome_switch:'Wechseln',welcome_migrate:'Migrieren',welcome_finish:'Abschluss',back:'Zurück',continue:'Weiter',required:'Erforderlich',automated:'Automatisch',manual:'Manuell',difficulty:'Schwierigkeit',risk:'Risiko',cost:'Kosten',platforms:'Plattformen',signUp:'Registrieren',all:'Alle',critical:'Kritisch',important:'Wichtig',optional:'Optional',done:'Erledigt',total:'Gesamt',migrated:'Migriert',inProgress:'In Bearbeitung',notStarted:'Nicht begonnen',progressDashboard:'Fortschrittsübersicht',weeklyChart:'Pro Woche migrierte Dienste (kumuliert)',categoriesCleared:'Abgeschlossene Kategorien',reverseMode:'Umgekehrter Modus',reverseNote:'Beginne mit einer neuen E-Mail-Adresse und prüfe rückwärts jedes Konto, das noch Gmail erreichen kann. Diese lokale Liste nutzt gescannte Dienste und deine Kandidaten; externe Zurücksetzungsabläufe werden nicht geprüft.',newEmail:'Neue E-Mail-Adresse',addService:'Dienst oder Domain hinzufügen',addServiceButton:'Dienst hinzufügen',confirmNewEmail:'Neue E-Mail bestätigen',updateEmail:'Wiederherstellung/Anmeldung ändern',removeGmail:'Altes Gmail entfernen',complete:'abgeschlossen',noReverse:'Füge oben einen Dienst hinzu, um die umgekehrte Liste zu starten.',toolkitDeepLink:'Toolkit-Link',openToolkit:'Toolkit öffnen',localPath:'Optionaler lokaler Datei-/Ordnerpfad',exportCSV:'CSV exportieren',exportJSON:'JSON exportieren',importJSON:'JSON importieren',exportPlan:'plan.json exportieren',exportCalendar:'Kalender exportieren',exportMarkdown:'Markdown-Plan exportieren',clear:'Leeren',noServices:'Noch keine Dienste gefunden.',scanStep:'Schließe Schritt 2 ab, um deine Google-Verbindungen zu scannen. Das Userscript synchronisiert die Daten beim nächsten Besuch.',offline:'Offline-Modus: Zwischengespeicherte DeGoogler-Dateien sind aktiv.'},
+fr:{language:'Langue',addProfile:'Ajouter un profil',step_welcome:'Bienvenue',step_install:'Installer les outils',step_scan:'Analyser les connexions',step_export:'Exporter les données',step_process:'Traiter les données',step_accounts:'Nouveaux comptes',step_migrate:'Migrer les services',step_finish:'Terminer',title_welcome:'Reprenez le contrôle de votre vie numérique',desc_welcome:'Une boîte à outils open source complète pour quitter Google. Ce guide vous accompagne à chaque étape.',title_install:'Installer la boîte à outils',title_scan:'Trouver tout ce qui est lié à Google',title_export:'Exporter vos données Google',title_process:'Traiter les données exportées',title_accounts:'Choisir des alternatives et importer les données',title_migrate:'Migrer les services connectés',title_finish:'Transition et coupure finale',welcome_install:'Installer',welcome_scan:'Analyser',welcome_export:'Exporter',welcome_process:'Traiter',welcome_switch:'Remplacer',welcome_migrate:'Migrer',welcome_finish:'Terminer',back:'Retour',continue:'Continuer',required:'Requis',automated:'Automatique',manual:'Manuel',difficulty:'Difficulté',risk:'Risque',cost:'Coût',platforms:'Plateformes',signUp:'Créer un compte',all:'Tous',critical:'Critique',important:'Important',optional:'Facultatif',done:'Terminé',total:'Total',migrated:'Migrés',inProgress:'En cours',notStarted:'Non commencé',progressDashboard:'Tableau de progression',weeklyChart:'Services migrés par semaine (cumul)',categoriesCleared:'Catégories terminées',reverseMode:'Mode inversé',reverseNote:'Commencez avec une nouvelle adresse e-mail et vérifiez chaque compte qui peut encore envoyer des messages à Gmail. Cette liste locale utilise les services détectés et vos candidats ; elle ne teste pas les procédures externes.',newEmail:'Nouvelle adresse e-mail',addService:'Ajouter un service ou domaine',addServiceButton:'Ajouter le service',confirmNewEmail:'Confirmer le nouvel e-mail',updateEmail:'Modifier récupération/connexion',removeGmail:'Retirer l’ancien Gmail',complete:'terminés',noReverse:'Ajoutez un service ci-dessus pour commencer la liste inversée.',toolkitDeepLink:'Lien de l’outil',openToolkit:'Ouvrir l’outil',localPath:'Chemin local facultatif',exportCSV:'Exporter CSV',exportJSON:'Exporter JSON',importJSON:'Importer JSON',exportPlan:'Exporter plan.json',exportCalendar:'Exporter le calendrier',exportMarkdown:'Exporter le plan Markdown',clear:'Effacer',noServices:'Aucun service trouvé.',scanStep:'Terminez l’étape 2 pour analyser vos connexions Google. Le userscript synchronise les données à votre retour.',offline:'Mode hors ligne : les fichiers DeGoogler en cache sont actifs.'}
+};
+const LANGUAGE_KEY='dg-language';
+let language=(()=>{try{const value=localStorage.getItem(LANGUAGE_KEY);return I18N[value]?value:'en'}catch{return'en'}})();
+function T(key,fallback){return(I18N[language]&&I18N[language][key])||I18N.en[key]||fallback||key}
+function setLanguage(value){if(!I18N[value])return;language=value;localStorage.setItem(LANGUAGE_KEY,value);render()}
 function renderProfiles(){
   const sel=document.getElementById('profSel'),add=document.getElementById('profAdd');if(!sel||!add)return;
   sel.innerHTML=profiles.map(p=>'<option value="'+p.id+'"'+(p.id===curProfile?' selected':'')+'>'+esc(p.name)+'</option>').join('');
   sel.onchange=()=>switchProfile(sel.value);
   add.onclick=addProfile;
+  add.title=T('addProfile','Add profile');
+  const langSel=document.getElementById('langSel');if(langSel){langSel.value=language;langSel.setAttribute('aria-label',T('language','Language'));langSel.onchange=()=>setLanguage(langSel.value)}
 }
 
 // Tracker
 function ldT(){return loadJson('tracker-services','degoogler-tracker-services',[])}
-function svT(d){localStorage.setItem(pkey('tracker-services'),JSON.stringify(d));emitPlan()}
+function svT(d){localStorage.setItem(pkey('tracker-services'),JSON.stringify(d));recordProgressEvent();emitPlan()}
 function tSt(t){return t==='oauth'?['password','email','disconnect','verified']:t==='access'?['review','disconnect','verified']:['email','verified']}
 function tLb(t){return t==='oauth'?{password:'PW',email:'EM',disconnect:'RV',verified:'OK'}:t==='access'?{review:'RV',disconnect:'DC',verified:'OK'}:{email:'EM',verified:'OK'}}
 let tFil='all';
+const PROGRESS_EVENTS_KEY='progress-events';
+const REVERSE_MODE_KEY='reverse-mode';
+const REVERSE_STEPS=[['confirm','Confirm new email'],['update','Update recovery/sign-in'],['retire','Remove old Gmail']];
+function serviceComplete(s){const st=tSt(s.type);return st.length>0&&st.every(k=>s.steps&&s.steps[k])}
+function progressSnapshot(){const tracker=ldT();return{at:new Date().toISOString(),actions:Object.values(checks).filter(Boolean).length,services:tracker.filter(serviceComplete).length}}
+function recordProgressEvent(){
+  const snap=progressSnapshot(),events=loadJson('progress-events','dg-progress-events',[]);if(!Array.isArray(events))return;
+  const last=events[events.length-1];if(last&&last.actions===snap.actions&&last.services===snap.services)return;
+  events.push(snap);while(events.length>64)events.shift();localStorage.setItem(pkey(PROGRESS_EVENTS_KEY),JSON.stringify(events));
+}
+function reverseId(s){return 'service-'+(s.domain||s.name||'unknown').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+function getReverseState(data){
+  const raw=loadJson(REVERSE_MODE_KEY,'dg-reverse-mode',{email:'',items:[]});const state=raw&&typeof raw==='object'?raw:{email:'',items:[]};
+  if(!Array.isArray(state.items))state.items=[];let changed=false;
+  data.forEach(s=>{const id=reverseId(s);if(!state.items.some(i=>i.id===id)){state.items.push({id,name:s.name||s.domain||id,domain:s.domain||'',steps:{}});changed=true}});
+  if(changed)localStorage.setItem(pkey(REVERSE_MODE_KEY),JSON.stringify(state));return state;
+}
+function saveReverseState(state){localStorage.setItem(pkey(REVERSE_MODE_KEY),JSON.stringify(state))}
 
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function dots(n,max){let h='<span class="dots">';for(let i=0;i<max;i++)h+='<span class="dot'+(i<n?' f':'')+'"></span>';return h+'</span>'}
@@ -380,7 +430,7 @@ function renderSB(){
     acts.forEach(a=>{tA++;if(checks[a.id])dA++});
     const el=document.createElement('div');
     el.className='ni'+(i===cur?' act':'')+(allDn&&acts.length>0?' dn':'');
-    el.innerHTML='<div class="nn">'+(allDn&&acts.length>0?'\u2713':s.num)+'</div><div class="nl">'+s.label+'</div>';
+    el.innerHTML='<div class="nn">'+(allDn&&acts.length>0?'\u2713':s.num)+'</div><div class="nl">'+T('step_'+s.id,s.label)+'</div>';
     el.onclick=()=>{cur=i;render();document.querySelector('.sidebar').classList.remove('open')};
     nav.appendChild(el);
   });
@@ -403,10 +453,10 @@ function render(){
 }
 
 function mkWelcome(s){
-  let h='<div class="hw"><h1>'+s.title+'</h1><p>'+s.desc+'</p><div class="hfl">';
-  ['Install','Scan','Export','Process','Switch','Migrate','Finish'].forEach((l,i)=>{
+  let h='<div class="hw"><h1>'+T('title_'+s.id,s.title)+'</h1><p>'+T('desc_'+s.id,s.desc)+'</p><div class="hfl">';
+  ['install','scan','export','process','switch','migrate','finish'].forEach((l,i)=>{
     if(i>0)h+='<span class="hfa">\u2192</span>';
-    h+='<div class="hfs"><span class="hfn">'+(i+1)+'</span>'+l+'</div>';
+    h+='<div class="hfs"><span class="hfn">'+(i+1)+'</span>'+T('welcome_'+l,l)+'</div>';
   });
   h+='</div><div class="br" style="justify-content:center">';
   h+='<button class="btn bp" onclick="cur=1;render()">Get Started \u2192</button>';
@@ -414,18 +464,18 @@ function mkWelcome(s){
   h+='</div></div>';return h;
 }
 
-function mkHdr(s){return'<div class="sh"><div class="sey">'+s.eyebrow+'</div><div class="stl">'+s.title+'</div><div class="sd">'+s.desc+'</div></div>'}
+function mkHdr(s){return'<div class="sh"><div class="sey">'+T('eyebrow_'+s.id,s.eyebrow)+'</div><div class="stl">'+T('title_'+s.id,s.title)+'</div><div class="sd">'+T('desc_'+s.id,s.desc)+'</div></div>'}
 
 function mkAct(a){
   const dn=checks[a.id];
   const bc=a.badge==='r'?'abg-r':a.badge==='a'?'abg-a':'abg-m';
-  const bl=a.badge==='r'?'Required':a.badge==='a'?'Automated':'Manual';
+  const bl=a.badge==='r'?T('required','Required'):a.badge==='a'?T('automated','Automated'):T('manual','Manual');
   const meta=actionMeta(a);
   let h='<div class="ac'+(dn?' dn':'')+'" data-id="'+a.id+'">';
   h+='<div class="ah"><div class="ack'+(dn?' dn':'')+'" data-id="'+a.id+'">'+(dn?'\u2713':'')+'</div>';
   h+='<div class="ainf"><div class="atl">'+a.title+'</div>';
   if(a.sub)h+='<div class="asu">'+a.sub+'</div>';
-  h+='<div class="ameta"><span>'+meta.time+'</span><span>Difficulty '+meta.score+'/5</span></div>';
+  h+='<div class="ameta"><span>'+meta.time+'</span><span>'+T('difficulty','Difficulty')+' '+meta.score+'/5</span></div>';
   h+='</div><span class="abg '+bc+'">'+bl+'</span></div>';
   if(a.body)h+='<div class="abd">'+a.body+'</div>';
   h+='</div>';return h;
@@ -433,8 +483,8 @@ function mkAct(a){
 
 function mkNav(){
   let h='<div class="snav">';
-  h+=cur>0?'<button class="btn bg" onclick="cur--;render()">\u2190 Back</button>':'<div></div>';
-  h+=cur<STEPS.length-1?'<button class="btn bp" onclick="cur++;render()">Continue \u2192</button>':'<div></div>';
+  h+=cur>0?'<button class="btn bg" onclick="cur--;render()">\u2190 '+T('back','Back')+'</button>':'<div></div>';
+  h+=cur<STEPS.length-1?'<button class="btn bp" onclick="cur++;render()">'+T('continue','Continue')+' \u2192</button>':'<div></div>';
   return h+'</div>';
 }
 
@@ -449,7 +499,7 @@ function wireAct(){
 
 // ── Alternatives (full 16-service database) ──
 function mkAlts(){
-  let h='<div class="cflt"><button class="cf'+(catFil==='All'?' act':'')+'" data-cat="All">All ('+SERVICES.length+')</button>';
+  let h='<div class="cflt"><button class="cf'+(catFil==='All'?' act':'')+'" data-cat="All">'+T('all','All')+' ('+SERVICES.length+')</button>';
   CATS.forEach(c=>{const n=SERVICES.filter(s=>s.cat===c).length;h+='<button class="cf'+(catFil===c?' act':'')+'" data-cat="'+c+'">'+c+' ('+n+')</button>'});
   h+='</div><div class="cflt">';
   PLATFORM_FILTERS.forEach(p=>{h+='<button class="cf'+(platformFil===p?' act':'')+'" data-platform="'+p+'">'+p+'</button>'});
@@ -462,14 +512,14 @@ function mkAlts(){
     h+='<span class="svi">'+svc.icon+'</span><span class="svn">'+svc.name+'</span>';
     h+='<span class="svc-cat">'+svc.cat+'</span><span class="svc-diff '+dc+'">'+svc.diff+'</span>';
     h+='<span class="svch">\u276F</span></div><div class="svb">';
-    h+='<div class="risk"><strong>Risk:</strong> '+esc(svc.risk||SERVICE_RISKS[svc.id]||'Verify account recovery, imports, and access before deleting source data.')+'</div>';
+    h+='<div class="risk"><strong>'+T('risk','Risk')+':</strong> '+esc(svc.risk||SERVICE_RISKS[svc.id]||'Verify account recovery, imports, and access before deleting source data.')+'</div>';
     alts.forEach(a=>{
       h+='<div class="alt"><div class="altp"><span class="altn">'+a.icon+' '+a.name+'</span>';
       h+='<span class="altr"><span>'+dots(a.priv,5)+' Privacy</span><span>'+dots(a.ease,5)+' Ease</span></span></div>';
       h+='<div class="altd">'+a.desc+'</div>';
-      h+='<div class="altm"><strong>Cost:</strong> '+a.cost+' &middot; <strong>Platforms:</strong> '+a.plat+'</div>';
+      h+='<div class="altm"><strong>'+T('cost','Cost')+':</strong> '+a.cost+' &middot; <strong>'+T('platforms','Platforms')+':</strong> '+a.plat+'</div>';
       h+='<div class="alti">\u2192 '+a.imp+'</div>';
-      h+='<div class="br" style="margin-top:0"><a href="'+a.url+'" target="_blank" class="btn bg" style="padding:6px 14px;font-size:10px">Sign Up</a></div>';
+      h+='<div class="br" style="margin-top:0"><a href="'+a.url+'" target="_blank" class="btn bg" style="padding:6px 14px;font-size:10px">'+T('signUp','Sign Up')+'</a></div>';
       h+='</div>';
     });
     h+='</div></div>';
@@ -492,24 +542,50 @@ function wireAlts(){
   });
 }
 
+function mkDashboard(data){
+  const events=loadJson(PROGRESS_EVENTS_KEY,'dg-progress-events',[]).filter(e=>e&&e.at).sort((a,b)=>new Date(a.at)-new Date(b.at));
+  const now=new Date(),monday=new Date(now);monday.setHours(0,0,0,0);monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
+  const weeks=[];for(let i=7;i>=0;i--){const start=new Date(monday);start.setDate(start.getDate()-i*7);const end=new Date(start);end.setDate(end.getDate()+7);const matching=events.filter(e=>new Date(e.at)<end);const latest=matching[matching.length-1];weeks.push({label:(start.getMonth()+1)+'/'+start.getDate(),value:latest?latest.services:0})}
+  const currentMigrated=data.filter(serviceComplete).length;if(currentMigrated>weeks[weeks.length-1].value)weeks[weeks.length-1].value=currentMigrated;
+  const max=Math.max(1,...weeks.map(w=>w.value));
+  const groups=[['Critical','critical'],['Important','important'],['Optional','optional']].map(([label,key])=>{const group=data.filter(s=>s.priority===key);const done=group.filter(serviceComplete).length;return{label,total:group.length,done,pct:group.length?Math.round(done/group.length*100):0}});
+  let h='<div class="dash"><div class="dash-title">'+T('progressDashboard','Progress dashboard')+'</div><div class="dash-grid"><div class="dchart"><h4>'+T('weeklyChart','Services migrated per week (cumulative)')+'</h4><div class="bar-chart">';
+  weeks.forEach(w=>{h+='<div class="wbar" title="'+w.value+' migrated"><span class="wbar-value">'+w.value+'</span><div class="wbar-fill" style="height:'+Math.max(2,Math.round(w.value/max*92))+'px"></div><span class="wbar-label">'+w.label+'</span></div>'});
+  h+='</div></div><div class="dchart"><h4>'+T('categoriesCleared','Categories cleared')+'</h4>';
+  groups.forEach(g=>{h+='<div class="cat-row"><span>'+g.label+'</span><div class="cat-track"><div class="cat-fill" style="width:'+g.pct+'%"></div></div><span>'+g.done+'/'+g.total+'</span></div>'});
+  h+='</div></div></div>';return h;
+}
+
+function mkReverseMode(data){
+  const state=getReverseState(data),complete=state.items.filter(i=>REVERSE_STEPS.every(([key])=>i.steps&&i.steps[key])).length;
+  let h='<div class="revbox"><div class="revhead"><strong>'+T('reverseMode','Reverse mode')+'</strong><span class="tpr tpr-i">'+complete+'/'+state.items.length+' '+T('complete','complete')+'</span></div>';
+  h+='<div class="revnote">'+T('reverseNote','Start with a new email address and work backward through every account that can still reach Gmail. This local checklist uses scanned services plus candidates you add; it does not probe external reset flows.')+'</div>';
+  h+='<div class="revform"><input id="revEmail" type="email" value="'+esc(state.email||'')+'" placeholder="'+T('newEmail','New email address')+'" aria-label="'+T('newEmail','New email address')+'"><input id="revService" placeholder="'+T('addService','Add service or domain')+'" aria-label="'+T('addService','Add service or domain')+'"><button class="btn bg" id="revAdd" style="font-size:10px;padding:6px 10px">+ '+T('addServiceButton','Add service')+'</button></div>';
+  h+='<div class="revitems">';
+  if(!state.items.length)h+='<div class="temp" style="padding:18px 8px">'+T('noReverse','Add a service above to begin the reverse checklist.')+'</div>';
+  state.items.forEach(item=>{h+='<div class="revitem"><div class="revitem-head"><span class="revname">'+esc(item.name)+'</span><span class="revdomain">'+esc(item.domain||'')+'</span></div><div class="revsteps">';REVERSE_STEPS.forEach(([key,label])=>{const labelKey=key==='confirm'?'confirmNewEmail':key==='update'?'updateEmail':'removeGmail';h+='<label class="revstep"><input class="revck" type="checkbox" data-rev-id="'+esc(item.id)+'" data-rev-step="'+key+'"'+(item.steps&&item.steps[key]?' checked':'')+'>'+T(labelKey,label)+'</label>'});h+='</div></div>'});
+  return h+'</div></div>';
+}
+
 // ── Tracker ──
 function mkTracker(){
   const data=ldT();let tot=0,mig=0,inp=0,pen=0,cr=0,im=0,op=0,dn=0;
   data.forEach(s=>{const st=tSt(s.type);const d=st.filter(k=>s.steps&&s.steps[k]).length;const isDn=d===st.length;tot++;if(isDn){mig++;dn++}else if(d>0)inp++;else pen++;if(s.priority==='critical')cr++;else if(s.priority==='important')im++;else op++});
   const pct=tot>0?Math.round(mig/tot*100):0;
-  let h='<div class="tsts"><div class="tsx"><div class="tsn">'+tot+'</div><div class="tsl">Total</div></div>';
-  h+='<div class="tsx"><div class="tsn" style="color:var(--grn)">'+mig+'</div><div class="tsl">Migrated</div></div>';
-  h+='<div class="tsx"><div class="tsn" style="color:var(--org)">'+inp+'</div><div class="tsl">In Progress</div></div>';
-  h+='<div class="tsx"><div class="tsn" style="color:var(--red)">'+pen+'</div><div class="tsl">Not Started</div></div></div>';
-  h+='<div class="tbar"><div class="pbar"><div class="pfill" style="width:'+pct+'%"></div></div><div class="ptxt"><span>'+pct+'% complete</span><span>'+mig+'/'+tot+' migrated</span></div></div>';
+  let h=mkDashboard(data)+mkReverseMode(data)+'<div class="tsts"><div class="tsx"><div class="tsn">'+tot+'</div><div class="tsl">'+T('total','Total')+'</div></div>';
+  h+='<div class="tsx"><div class="tsn" style="color:var(--grn)">'+mig+'</div><div class="tsl">'+T('migrated','Migrated')+'</div></div>';
+  h+='<div class="tsx"><div class="tsn" style="color:var(--org)">'+inp+'</div><div class="tsl">'+T('inProgress','In Progress')+'</div></div>';
+  h+='<div class="tsx"><div class="tsn" style="color:var(--red)">'+pen+'</div><div class="tsl">'+T('notStarted','Not Started')+'</div></div></div>';
+  h+='<div class="tbar"><div class="pbar"><div class="pfill" style="width:'+pct+'%"></div></div><div class="ptxt"><span>'+pct+'% '+T('complete','complete')+'</span><span>'+mig+'/'+tot+' '+T('migrated','migrated').toLowerCase()+'</span></div></div>';
   h+='<div class="ttbs">';
   [['all',tot],['critical',cr],['important',im],['optional',op],['done',dn]].forEach(([f,c])=>{
-    h+='<button class="ttb'+(tFil===f?' act':'')+'" data-f="'+f+'">'+f[0].toUpperCase()+f.slice(1)+' ('+c+')</button>';
+    const filterLabel=f==='all'?T('all','All'):f==='critical'?T('critical','Critical'):f==='important'?T('important','Important'):f==='optional'?T('optional','Optional'):T('done','Done');
+    h+='<button class="ttb'+(tFil===f?' act':'')+'" data-f="'+f+'">'+filterLabel+' ('+c+')</button>';
   });
   h+='</div><div class="tls">';
   if(tot===0){
-    h+='<div class="temp"><p style="font-size:20px;margin-bottom:8px">\uD83D\uDD17</p><p>No services found yet.</p>';
-    h+='<p style="margin-top:8px">Complete <strong>Step 2</strong> to scan your Google connections.<br>The userscript syncs data here when you visit this page.</p></div>';
+    h+='<div class="temp"><p style="font-size:20px;margin-bottom:8px">\uD83D\uDD17</p><p>'+T('noServices','No services found yet.')+'</p>';
+    h+='<p style="margin-top:8px">'+T('scanStep','Complete Step 2 to scan your Google connections. The userscript syncs data here when you visit this page.')+'</p></div>';
   }else{
     let fl=data;
     if(tFil==='done')fl=data.filter(s=>tSt(s.type).every(k=>s.steps&&s.steps[k]));
@@ -534,18 +610,18 @@ function mkTracker(){
   }
   h+='</div><div class="tact">';
   h+='<div style="width:100%;padding:10px 12px;border:1px solid var(--brd);border-radius:8px;background:var(--bg2);display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
-  h+='<span style="font-size:10px;color:var(--dim);font-family:var(--mono)">Toolkit deep link</span>';
+  h+='<span style="font-size:10px;color:var(--dim);font-family:var(--mono)">'+T('toolkitDeepLink','Toolkit deep link')+'</span>';
   h+='<select id="tktool" style="font-size:10px;background:var(--bg);color:var(--mut);border:1px solid var(--brd);padding:5px;border-radius:5px"><option value="takeout">Takeout</option><option value="photos">Photos</option><option value="passwords">Passwords</option><option value="email">Email</option><option value="bookmarks">Bookmarks</option><option value="contacts">Contacts</option><option value="converter">Converter</option></select>';
-  h+='<input id="tkpath" style="flex:1;min-width:180px;font-size:10px;background:var(--bg);color:var(--mut);border:1px solid var(--brd);padding:6px 8px;border-radius:5px" placeholder="Optional local file/folder path" aria-label="Toolkit local path">';
-  h+='<a id="tkgo" class="btn bg" href="degoogler://toolkit?tool=takeout" style="font-size:10px;padding:6px 10px">Open Toolkit</a></div>';
-  h+='<button class="btn bg" id="tc" style="font-size:10px;padding:6px 12px">Export CSV</button>';
-  h+='<button class="btn bg" id="tj" style="font-size:10px;padding:6px 12px">Export JSON</button>';
-  h+='<button class="btn bg" id="ti" style="font-size:10px;padding:6px 12px">Import JSON</button>';
+  h+='<input id="tkpath" style="flex:1;min-width:180px;font-size:10px;background:var(--bg);color:var(--mut);border:1px solid var(--brd);padding:6px 8px;border-radius:5px" placeholder="'+T('localPath','Optional local file/folder path')+'" aria-label="Toolkit local path">';
+  h+='<a id="tkgo" class="btn bg" href="degoogler://toolkit?tool=takeout" style="font-size:10px;padding:6px 10px">'+T('openToolkit','Open Toolkit')+'</a></div>';
+  h+='<button class="btn bg" id="tc" style="font-size:10px;padding:6px 12px">'+T('exportCSV','Export CSV')+'</button>';
+  h+='<button class="btn bg" id="tj" style="font-size:10px;padding:6px 12px">'+T('exportJSON','Export JSON')+'</button>';
+  h+='<button class="btn bg" id="ti" style="font-size:10px;padding:6px 12px">'+T('importJSON','Import JSON')+'</button>';
   h+='<input type="file" id="tif" accept=".json" style="display:none">';
-  h+='<button class="btn bg" id="tpj" style="font-size:10px;padding:6px 12px">Export plan.json</button>';
-  h+='<button class="btn bg" id="tics" style="font-size:10px;padding:6px 12px">Export Calendar</button>';
-  h+='<button class="btn bg" id="tmd" style="font-size:10px;padding:6px 12px">Export Markdown Plan</button>';
-  if(tot>0)h+='<button class="btn bg" id="tcl" style="font-size:10px;padding:6px 12px;margin-left:auto;color:var(--red)">Clear</button>';
+  h+='<button class="btn bg" id="tpj" style="font-size:10px;padding:6px 12px">'+T('exportPlan','Export plan.json')+'</button>';
+  h+='<button class="btn bg" id="tics" style="font-size:10px;padding:6px 12px">'+T('exportCalendar','Export Calendar')+'</button>';
+  h+='<button class="btn bg" id="tmd" style="font-size:10px;padding:6px 12px">'+T('exportMarkdown','Export Markdown Plan')+'</button>';
+  if(tot>0)h+='<button class="btn bg" id="tcl" style="font-size:10px;padding:6px 12px;margin-left:auto;color:var(--red)">'+T('clear','Clear')+'</button>';
   h+='</div>';
   return h;
 }
@@ -576,6 +652,17 @@ function wireTrk(){
     const updateToolkitLink=()=>{localStorage.setItem(pkey('toolkit-path'),tkPath.value);localStorage.setItem(pkey('toolkit-tool'),tkTool.value);let href='degoogler://toolkit?tool='+encodeURIComponent(tkTool.value);if(tkPath.value.trim())href+='&path='+encodeURIComponent(tkPath.value.trim());tkGo.href=href};
     tkPath.addEventListener('input',updateToolkitLink);tkTool.addEventListener('change',updateToolkitLink);updateToolkitLink();
   }
+  document.querySelectorAll('.revck').forEach(box=>box.addEventListener('change',()=>{
+    const state=getReverseState([]),item=state.items.find(i=>i.id===box.dataset.revId);if(!item)return;
+    if(!item.steps)item.steps={};item.steps[box.dataset.revStep]=box.checked;saveReverseState(state);recordProgressEvent();render();
+  }));
+  const revEmail=document.getElementById('revEmail');if(revEmail)revEmail.addEventListener('change',()=>{const state=getReverseState([]);state.email=revEmail.value.trim();saveReverseState(state)});
+  const revAdd=document.getElementById('revAdd');if(revAdd)revAdd.addEventListener('click',()=>{
+    const input=document.getElementById('revService'),name=input&&input.value.trim();if(!name)return;
+    const state=getReverseState([]),id='manual-'+name.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+    if(!state.items.some(i=>i.id===id)){state.items.push({id,name,domain:name.includes('.')?name:'',steps:{}});saveReverseState(state)}
+    if(input)input.value='';render();
+  });
 }
 
 // ── Markdown Export ──
@@ -660,7 +747,7 @@ async function loadAlternatives(){
 }
 if('serviceWorker' in navigator&&location.protocol!=='file:'){
   navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  window.addEventListener('offline',()=>{let b=document.getElementById('offlineBanner');if(!b){b=document.createElement('div');b.id='offlineBanner';b.className='offline';b.textContent='Offline mode: cached DeGoogler files are active.';document.body.appendChild(b)}b.style.display='block'});
+  window.addEventListener('offline',()=>{let b=document.getElementById('offlineBanner');if(!b){b=document.createElement('div');b.id='offlineBanner';b.className='offline';b.textContent=T('offline','Offline mode: cached DeGoogler files are active.');document.body.appendChild(b)}b.style.display='block'});
   window.addEventListener('online',()=>{const b=document.getElementById('offlineBanner');if(b)b.style.display='none'});
 }
 
