@@ -39,6 +39,16 @@ Or download the toolkit files from the repository/release bundle, keep `DeGoogle
 2. [Click here to install](https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-BrowserAssistant.user.js)
 3. Visit any Google service page — the assistant panel appears automatically
 
+### Release bundle and hosting
+
+GitHub Pages deploys the static Web App automatically on every push to `main` through `.github/workflows/pages.yml`. To build the distributable bundle locally:
+
+```powershell
+pwsh -NoProfile -File .\build-release.ps1
+```
+
+The command creates `dist\DeGoogler-v<version>.zip`, containing the Web App, userscript, two-file toolkit, bundled ExifTool runtime, documentation, and a generated `SHA256SUMS` manifest. The toolkit remains unsigned; the manifest provides release-artifact integrity checking.
+
 ## Features
 
 ### Web App — Migration Wizard

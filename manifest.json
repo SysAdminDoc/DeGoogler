@@ -1,6 +1,7 @@
 {
   "name": "DeGoogler",
   "short_name": "DeGoogler",
+  "version": "0.0.7",
   "description": "Offline-capable migration wizard for leaving Google services.",
   "start_url": "./index.html",
   "scope": "./",

@@ -12,6 +12,7 @@ All notable changes to DeGoogler will be documented in this file.
 - Added: AES-GCM connected-service storage for the Browser Assistant, with migration from the previous local JSON format.
 - Added: Shared migration-plan synchronization between the Web App and Browser Assistant plus toolkit plan validation.
 - Added: `degoogler://` toolkit deep links and per-user protocol registration for opening a selected tool with a local path.
+- Added: GitHub Pages deployment workflow and reproducible release-bundle builder with SHA-256 manifests.
 
 ## [v0.0.1] - %Y->- (HEAD -> main, origin/main, origin/HEAD)
 
