@@ -17,6 +17,7 @@ All notable changes to DeGoogler will be documented in this file.
 - Added: Offline Web App progress dashboard with weekly migration snapshots and priority-category completion bars.
 - Added: Reverse-mode email migration checklist for tracked and manually added services.
 - Added: Web App localization selector with English, Spanish, German, and French shell/tracker translations.
+- Added: Nginx-based Docker image for self-hosting the static Web App.
 
 ## [v0.0.1] - %Y->- (HEAD -> main, origin/main, origin/HEAD)
 

@@ -51,6 +51,13 @@ The command creates `dist\DeGoogler-v<version>.zip`, containing the Web App, use
 
 The toolkit's **Check for updates** button queries the public GitHub Releases API. It only offers a download when the release contains both the expected bundle and a SHA-256 manifest; the downloaded archive is verified before it is saved. The same flow is available without opening the WPF window with `-CheckForUpdate`, or with an explicit verified download using `-DownloadUpdate`.
 
+For self-hosting, build the lightweight static container from the repository root:
+
+```powershell
+docker build -t degoogler:local .
+docker run --rm -p 8080:80 degoogler:local
+```
+
 ## Features
 
 ### Web App — Migration Wizard
