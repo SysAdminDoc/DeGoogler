@@ -313,7 +313,7 @@ if(!profiles.some(p=>p.id===curProfile))curProfile=profiles[0].id;
 function pkey(k){return 'dg-'+curProfile+'-'+k}
 function loadJson(key,oldKey,fallback){try{const raw=localStorage.getItem(pkey(key))||(curProfile==='personal'?localStorage.getItem(oldKey):null);return raw?JSON.parse(raw):fallback}catch{return fallback}}
 let cur=0,checks=loadJson('chk','dg-chk',{}),catFil='All',platformFil='All';
-function saveCk(){localStorage.setItem(pkey('chk'),JSON.stringify(checks))}
+function saveCk(){localStorage.setItem(pkey('chk'),JSON.stringify(checks));emitPlan()}
 function switchProfile(id){curProfile=id;localStorage.setItem(PROFILE_ACTIVE_KEY,id);checks=loadJson('chk','dg-chk',{});cur=0;render()}
 function addProfile(){const id='profile-'+Date.now();profiles.push({id:id,name:'Profile '+profiles.length});localStorage.setItem(PROFILE_LIST_KEY,JSON.stringify(profiles));switchProfile(id)}
 function renderProfiles(){
@@ -325,7 +325,7 @@ function renderProfiles(){
 
 // Tracker
 function ldT(){return loadJson('tracker-services','degoogler-tracker-services',[])}
-function svT(d){localStorage.setItem(pkey('tracker-services'),JSON.stringify(d))}
+function svT(d){localStorage.setItem(pkey('tracker-services'),JSON.stringify(d));emitPlan()}
 function tSt(t){return t==='oauth'?['password','email','disconnect','verified']:t==='access'?['review','disconnect','verified']:['email','verified']}
 function tLb(t){return t==='oauth'?{password:'PW',email:'EM',disconnect:'RV',verified:'OK'}:t==='access'?{review:'RV',disconnect:'DC',verified:'OK'}:{email:'EM',verified:'OK'}}
 let tFil='all';
@@ -533,6 +533,11 @@ function mkTracker(){
     });
   }
   h+='</div><div class="tact">';
+  h+='<div style="width:100%;padding:10px 12px;border:1px solid var(--brd);border-radius:8px;background:var(--bg2);display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
+  h+='<span style="font-size:10px;color:var(--dim);font-family:var(--mono)">Toolkit deep link</span>';
+  h+='<select id="tktool" style="font-size:10px;background:var(--bg);color:var(--mut);border:1px solid var(--brd);padding:5px;border-radius:5px"><option value="takeout">Takeout</option><option value="photos">Photos</option><option value="passwords">Passwords</option><option value="email">Email</option><option value="bookmarks">Bookmarks</option><option value="contacts">Contacts</option><option value="converter">Converter</option></select>';
+  h+='<input id="tkpath" style="flex:1;min-width:180px;font-size:10px;background:var(--bg);color:var(--mut);border:1px solid var(--brd);padding:6px 8px;border-radius:5px" placeholder="Optional local file/folder path" aria-label="Toolkit local path">';
+  h+='<a id="tkgo" class="btn bg" href="degoogler://toolkit?tool=takeout" style="font-size:10px;padding:6px 10px">Open Toolkit</a></div>';
   h+='<button class="btn bg" id="tc" style="font-size:10px;padding:6px 12px">Export CSV</button>';
   h+='<button class="btn bg" id="tj" style="font-size:10px;padding:6px 12px">Export JSON</button>';
   h+='<button class="btn bg" id="ti" style="font-size:10px;padding:6px 12px">Import JSON</button>';
@@ -564,6 +569,13 @@ function wireTrk(){
   const tmd=document.getElementById('tmd');if(tmd)tmd.addEventListener('click',exportMd);
   const tpj=document.getElementById('tpj');if(tpj)tpj.addEventListener('click',()=>dl(JSON.stringify(buildPlan(),null,2),'application/json','plan.json'));
   const tics=document.getElementById('tics');if(tics)tics.addEventListener('click',exportIcs);
+  const tkPath=document.getElementById('tkpath'),tkTool=document.getElementById('tktool'),tkGo=document.getElementById('tkgo');
+  if(tkPath&&tkTool&&tkGo){
+    tkPath.value=localStorage.getItem(pkey('toolkit-path'))||'';
+    tkTool.value=localStorage.getItem(pkey('toolkit-tool'))||'takeout';
+    const updateToolkitLink=()=>{localStorage.setItem(pkey('toolkit-path'),tkPath.value);localStorage.setItem(pkey('toolkit-tool'),tkTool.value);let href='degoogler://toolkit?tool='+encodeURIComponent(tkTool.value);if(tkPath.value.trim())href+='&path='+encodeURIComponent(tkPath.value.trim());tkGo.href=href};
+    tkPath.addEventListener('input',updateToolkitLink);tkTool.addEventListener('change',updateToolkitLink);updateToolkitLink();
+  }
 }
 
 // ── Markdown Export ──
@@ -575,6 +587,7 @@ function buildPlan(){
   });
   return {schema:'https://sysadmindoc.github.io/DeGoogler/plan.schema.json',version:APP_VERSION,profile:curProfile,generatedAt:new Date().toISOString(),actions,connectedServices:tracker};
 }
+function emitPlan(){try{window.postMessage({type:'degoogler-plan-sync',plan:buildPlan()},location.origin)}catch{}}
 
 function icsDate(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}
 function exportIcs(){
@@ -625,7 +638,14 @@ function cpy(t){navigator.clipboard.writeText(t).then(()=>{const e=document.crea
 
 // ── Userscript Sync Bridge ──
 window.addEventListener('message',e=>{
+  if(e.source!==window)return;
   if(e.data&&e.data.type==='degoogler-sync'){const s=e.data.services;if(Array.isArray(s)&&s.length>0){svT(s);if(cur===6)render();else renderSB()}}
+  if(e.data&&e.data.type==='degoogler-plan-sync'){
+    const p=e.data.plan;
+    if(p&&Array.isArray(p.actions)&&Array.isArray(p.connectedServices)){
+      p.actions.forEach(a=>{if(a&&a.id)checks[a.id]=!!a.done});saveCk();svT(p.connectedServices);if(cur===6)render();else renderSB();
+    }
+  }
 });
 function chkInj(){const el=document.getElementById('degoogler-userscript-data');if(el){try{const d=JSON.parse(el.textContent);if(Array.isArray(d)&&d.length>0){svT(d);render()}}catch{}}}
 let polls=0;const pi=setInterval(()=>{chkInj();if(++polls>20)clearInterval(pi)},500);
@@ -644,7 +664,7 @@ if('serviceWorker' in navigator&&location.protocol!=='file:'){
   window.addEventListener('online',()=>{const b=document.getElementById('offlineBanner');if(b)b.style.display='none'});
 }
 
-loadAlternatives().finally(render);
+loadAlternatives().finally(()=>{render();emitPlan()});
 </script>
 </body>
 </html>

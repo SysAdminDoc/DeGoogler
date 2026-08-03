@@ -46,6 +46,42 @@ function Get-DgProperty {
     return $null
 }
 
+function Import-DgMigrationPlan {
+    param([Parameter(Mandatory=$true)][string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { throw "Migration plan does not exist: $Path" }
+    try { $plan = (Get-Content -LiteralPath $Path -Raw -ErrorAction Stop) | ConvertFrom-Json -ErrorAction Stop } catch { throw "Migration plan is not valid JSON: $Path" }
+    foreach ($required in @('schema','version','profile','generatedAt','actions','connectedServices')) {
+        if (-not ($plan.PSObject.Properties.Name -contains $required)) { throw "Migration plan is missing required property: $required" }
+    }
+    if ([string]$plan.version -notmatch '^\d+\.\d+\.\d+$') { throw 'Migration plan version must use semver.' }
+    if ($plan.actions -isnot [System.Collections.IEnumerable] -or $plan.connectedServices -isnot [System.Collections.IEnumerable]) { throw 'Migration plan actions and connectedServices must be arrays.' }
+    foreach ($action in @($plan.actions)) {
+        foreach ($required in @('id','phase','title','required','automated','timeEstimate','difficultyScore','done')) {
+            if ($null -eq (Get-DgProperty $action $required)) { throw "Migration action is missing required property: $required" }
+        }
+        $score = [int](Get-DgProperty $action 'difficultyScore')
+        if ($score -lt 1 -or $score -gt 5) { throw "Migration action difficultyScore must be between 1 and 5: $($action.id)" }
+    }
+    return $plan
+}
+
+function ConvertFrom-DgDeepLink {
+    param([Parameter(Mandatory=$true)][string]$Uri)
+    try { $parsed = New-Object System.Uri($Uri) } catch { throw 'Deep link is not a valid URI.' }
+    if ($parsed.Scheme -ne 'degoogler' -or $parsed.Host -ne 'toolkit') { throw 'Unsupported DeGoogler deep-link scheme.' }
+    $values = @{}
+    foreach ($pair in ($parsed.Query.TrimStart('?') -split '&')) {
+        if ([string]::IsNullOrWhiteSpace($pair)) { continue }
+        $parts = $pair -split '=', 2
+        $key = [Uri]::UnescapeDataString($parts[0]).ToLowerInvariant()
+        $value = if ($parts.Count -gt 1) { [Uri]::UnescapeDataString(($parts[1] -replace '\+', ' ')) } else { '' }
+        $values[$key] = $value
+    }
+    $tool = [string]$values['tool']
+    if ($tool -notin @('takeout','photos','passwords','email','bookmarks','contacts','converter')) { throw "Unsupported toolkit deep-link tool: $tool" }
+    return [pscustomobject]@{ Tool = $tool; Path = [string]$values['path']; Plan = [string]$values['plan'] }
+}
+
 function Get-DgFirstProperty {
     param([AllowNull()]$Object, [Parameter(Mandatory=$true)][string[]]$Names)
     foreach ($name in $Names) {

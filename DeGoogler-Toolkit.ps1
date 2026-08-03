@@ -19,6 +19,12 @@
     0.0.2
 #>
 
+param(
+    [string]$DeepLink,
+    [string]$PlanPath,
+    [switch]$RegisterProtocol
+)
+
 $script:toolkitRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $script:corePath = Join-Path $script:toolkitRoot 'DeGoogler-Toolkit.Core.ps1'
 if (-not (Test-Path -LiteralPath $script:corePath)) {
@@ -27,10 +33,29 @@ if (-not (Test-Path -LiteralPath $script:corePath)) {
 }
 . $script:corePath
 
+function Register-DgProtocolHandler {
+    if ([string]::IsNullOrWhiteSpace($PSCommandPath)) { throw 'Protocol registration requires running the toolkit from a .ps1 file.' }
+    $protocolRoot = 'HKCU:\Software\Classes\degoogler'
+    $commandRoot = Join-Path $protocolRoot 'shell\open\command'
+    New-Item -Path $commandRoot -Force | Out-Null
+    Set-ItemProperty -Path $protocolRoot -Name '(Default)' -Value 'URL:DeGoogler Toolkit'
+    New-ItemProperty -Path $protocolRoot -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null
+    Set-ItemProperty -Path $commandRoot -Name '(Default)' -Value ('powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' + $PSCommandPath + '" -DeepLink "%1"')
+}
+
+if ($RegisterProtocol) {
+    Register-DgProtocolHandler
+    Write-Output 'Registered degoogler:// protocol handler for the current user.'
+    exit 0
+}
+
 # ── Auto-elevate ──
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Start-Process powershell.exe -Verb RunAs -ArgumentList "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    $elevatedArguments = @('-ExecutionPolicy','Bypass','-File',('"' + $PSCommandPath + '"'))
+    if ($DeepLink) { $elevatedArguments += @('-DeepLink',('"' + $DeepLink + '"')) }
+    if ($PlanPath) { $elevatedArguments += @('-PlanPath',('"' + $PlanPath + '"')) }
+    Start-Process powershell.exe -Verb RunAs -ArgumentList ($elevatedArguments -join ' ')
     exit
 }
 
@@ -1576,8 +1601,54 @@ $controls['btnConvertersRun'].Add_Click({
     }
 })
 
+function Apply-DgStartupInputs {
+    if ($DeepLink) {
+        try {
+            $link = ConvertFrom-DgDeepLink -Uri $DeepLink
+            $targetTab = switch ($link.Tool) {
+                'takeout' { 'tabTakeout' }
+                'photos' { 'tabPhotos' }
+                'passwords' { 'tabPasswords' }
+                'email' { 'tabEmail' }
+                'bookmarks' { 'tabBookmarks' }
+                'contacts' { 'tabContacts' }
+                default { 'tabConverters' }
+            }
+            Switch-Tab $targetTab
+            if ($link.Tool -eq 'takeout' -and $link.Path -and (Test-Path -LiteralPath $link.Path)) {
+                $script:takeoutFiles = @(Get-ChildItem -LiteralPath $link.Path -File | Where-Object { $_.Extension -in @('.zip','.tgz') } | ForEach-Object { $_.FullName })
+                $controls['txtTakeoutInput'].Text = "$($script:takeoutFiles.Count) archive(s) selected"
+            } elseif ($link.Path) {
+                $controlName = switch ($link.Tool) {
+                    'photos' { 'txtPhotosInput' }
+                    'passwords' { 'txtPasswordsInput' }
+                    'email' { 'txtEmailInput' }
+                    'bookmarks' { 'txtBookmarksInput' }
+                    'contacts' { 'txtContactsInput' }
+                    default { 'txtConvertersInput' }
+                }
+                if (Test-Path -LiteralPath $link.Path) {
+                    $controls[$controlName].Text = $link.Path
+                    $controls[$controlName].Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#e0e0e0')
+                } else { Write-Log "Deep-link path does not exist: $($link.Path)" 'WARN' }
+            }
+            if ($link.Plan) { $PlanPath = $link.Plan }
+            Write-Log "Opened from degoogler:// deep link ($($link.Tool))" 'OK'
+        } catch { Write-Log "Invalid DeGoogler deep link: $_" 'ERROR' }
+    }
+    if ($PlanPath) {
+        try {
+            $plan = Import-DgMigrationPlan -Path $PlanPath
+            $pending = @($plan.actions | Where-Object { -not $_.done }).Count
+            Write-Log "Loaded migration plan for profile '$($plan.profile)': $pending pending action(s)." 'OK'
+            Write-JsonLog -Tool 'PlanSync' -Action 'Import' -Message 'Migration plan loaded' -Level 'OK' -Data @{ profile = $plan.profile; pendingActions = $pending; source = $PlanPath }
+        } catch { Write-Log "Could not load migration plan: $_" 'ERROR' }
+    }
+}
+
 # ── Initialize ──
 Switch-Tab 'tabTakeout'
+Apply-DgStartupInputs
 
 # ── Show window ──
 $window.ShowDialog() | Out-Null

@@ -9,6 +9,9 @@ All notable changes to DeGoogler will be documented in this file.
 - Added: A non-UI toolkit core module and smoke tests for deterministic converter verification.
 - Added: Bundled ExifTool 13.59 with its required support directory for offline photo metadata repair.
 - Added: Photo metadata cascade, supplemental/truncated sidecar matching, Picasa `.ini` support, burst detection, and XMP fallback sidecars.
+- Added: AES-GCM connected-service storage for the Browser Assistant, with migration from the previous local JSON format.
+- Added: Shared migration-plan synchronization between the Web App and Browser Assistant plus toolkit plan validation.
+- Added: `degoogler://` toolkit deep links and per-user protocol registration for opening a selected tool with a local path.
 
 ## [v0.0.1] - %Y->- (HEAD -> main, origin/main, origin/HEAD)
 

@@ -52,6 +52,106 @@
         fontStack: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     };
 
+    // ── Connected-service storage ──
+    // The data payload is encrypted before it reaches GM_setValue. The generated
+    // AES key is kept in a separate GM value so existing installations can
+    // migrate without prompting for a new password; userscript storage is still
+    // treated as local browser state, not a secure vault.
+    const DG_SERVICE_STORE = 'dg-connected-services';
+    const DG_SERVICE_KEY = 'dg-connected-services-key';
+    const DG_PLAN_STORE = 'dg-migration-plan';
+    let dgStorageError = null;
+
+    function dgBytesToBase64(bytes) {
+        let binary = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
+        return btoa(binary);
+    }
+
+    function dgBase64ToBytes(value) {
+        const binary = atob(value || '');
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes;
+    }
+
+    async function dgGetStorageKey() {
+        if (!globalThis.crypto?.subtle || !globalThis.crypto?.getRandomValues) throw new Error('Web Crypto AES-GCM is unavailable');
+        let encoded = GM_getValue(DG_SERVICE_KEY, '');
+        if (!encoded) {
+            const raw = new Uint8Array(32);
+            crypto.getRandomValues(raw);
+            encoded = dgBytesToBase64(raw);
+            GM_setValue(DG_SERVICE_KEY, encoded);
+        }
+        return crypto.subtle.importKey('raw', dgBase64ToBytes(encoded), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+    }
+
+    async function dgEncryptServices(services) {
+        const key = await dgGetStorageKey();
+        const iv = new Uint8Array(12);
+        crypto.getRandomValues(iv);
+        const plaintext = new TextEncoder().encode(JSON.stringify(services));
+        const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext);
+        return {
+            schema: 'degoogler.connected-services',
+            version: '1.0.0',
+            encryptedAtRest: true,
+            algorithm: 'AES-GCM',
+            iv: dgBytesToBase64(iv),
+            data: dgBytesToBase64(new Uint8Array(ciphertext))
+        };
+    }
+
+    async function dgLoadServices() {
+        dgStorageError = null;
+        let parsed;
+        try { parsed = JSON.parse(GM_getValue(DG_SERVICE_STORE, '[]')); } catch { parsed = []; }
+        if (Array.isArray(parsed)) return parsed;
+        if (parsed && parsed.encryptedAtRest && parsed.algorithm === 'AES-GCM') {
+            try {
+                const key = await dgGetStorageKey();
+                const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: dgBase64ToBytes(parsed.iv) }, key, dgBase64ToBytes(parsed.data));
+                const services = JSON.parse(new TextDecoder().decode(plaintext));
+                return Array.isArray(services) ? services : [];
+            } catch (error) {
+                dgStorageError = 'Encrypted connected-service data could not be decrypted.';
+                console.error('[DeGoogler] ' + dgStorageError, error);
+                return [];
+            }
+        }
+        // Migrate the pre-encryption object format in memory; the next save
+        // rewrites it as AES-GCM ciphertext.
+        if (parsed && Array.isArray(parsed.services)) return parsed.services;
+        return [];
+    }
+
+    async function dgSaveServices(services) {
+        try {
+            GM_setValue(DG_SERVICE_STORE, JSON.stringify(await dgEncryptServices(services)));
+            dgStorageError = null;
+        } catch (error) {
+            dgStorageError = 'Encrypted storage unavailable; connected services were saved locally without encryption.';
+            console.error('[DeGoogler] ' + dgStorageError, error);
+            GM_setValue(DG_SERVICE_STORE, JSON.stringify({ schema: 'degoogler.connected-services', version: '1.0.0', encryptedAtRest: false, services }));
+        }
+    }
+
+    function dgLoadPlan() {
+        try {
+            const plan = JSON.parse(GM_getValue(DG_PLAN_STORE, 'null'));
+            return plan && Array.isArray(plan.actions) && Array.isArray(plan.connectedServices) ? plan : null;
+        } catch { return null; }
+    }
+
+    function dgSavePlan(plan) {
+        if (!plan || !Array.isArray(plan.actions) || !Array.isArray(plan.connectedServices)) return;
+        GM_setValue(DG_PLAN_STORE, JSON.stringify(plan));
+    }
+
     // ── CSS ──
     const STYLES = `
         /* DeGoogler Panel Base */
@@ -982,22 +1082,29 @@
     // ═══════════════════════════════════════════════
     function initConnectedServicesAuditor() {
         // ── Persistent service store ──
-        const STORE_KEY = 'dg-connected-services';
+        let servicesCache = [];
+        let servicesHydrated = false;
+        let saveQueue = Promise.resolve();
+        function cloneServices(services) {
+            try { return JSON.parse(JSON.stringify(services || [])); } catch { return []; }
+        }
         function loadServices() {
-            try {
-                const parsed = JSON.parse(GM_getValue(STORE_KEY, '[]'));
-                if (Array.isArray(parsed)) return parsed;
-                if (parsed && Array.isArray(parsed.services)) return parsed.services;
-                return [];
-            }
-            catch { return []; }
+            return cloneServices(servicesCache);
         }
         function saveServices(svcs) {
-            GM_setValue(STORE_KEY, JSON.stringify({
-                version: '0.0.7',
-                encryptedAtRest: false,
-                services: svcs
-            }));
+            servicesCache = cloneServices(svcs);
+            const snapshot = cloneServices(servicesCache);
+            saveQueue = saveQueue.then(() => dgSaveServices(snapshot));
+            return saveQueue;
+        }
+        async function hydrateServices() {
+            servicesCache = cloneServices(await dgLoadServices());
+            servicesHydrated = true;
+            renderList();
+            if (dgStorageError) {
+                statusEl.textContent = dgStorageError;
+                statusEl.style.color = CFG.orange;
+            }
         }
         function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
@@ -1179,6 +1286,11 @@
         // ── DOM Scraper ──
         // Scrapes Google's connections page using the actual DOM selectors from MHTML analysis
         async function scrapeApps(type) {
+            if (!servicesHydrated) {
+                statusEl.textContent = 'Still decrypting saved services; try again in a moment.';
+                statusEl.style.color = CFG.orange;
+                return 0;
+            }
             const services = loadServices();
             let found = 0;
             const authType = type === 'signin' ? 'oauth' : 'access';
@@ -1566,6 +1678,7 @@
 
         // Initial render
         renderList();
+        hydrateServices();
     }
 
     // ═══════════════════════════════════════════════
@@ -1721,15 +1834,10 @@
         });
     }
 
-    function initPageSync() {
+    async function initPageSync() {
         // Send tracked services to the landing page via postMessage
-        const STORE_KEY = 'dg-connected-services';
-        let data = [];
-        try {
-            const parsed = JSON.parse(GM_getValue(STORE_KEY, '[]'));
-            data = Array.isArray(parsed) ? parsed : (parsed.services || []);
-        }
-        catch { data = []; }
+        const data = await dgLoadServices();
+        const plan = dgLoadPlan();
 
         if (data.length > 0) {
             // postMessage to the page
@@ -1742,11 +1850,19 @@
             el.textContent = JSON.stringify(data);
             document.body.appendChild(el);
         }
+        if (plan) window.postMessage({ type: 'degoogler-plan-sync', plan }, '*');
 
         // Listen for requests from the page
         window.addEventListener('message', (event) => {
+            if (event.source !== window) return;
+            if (event.data && event.data.type === 'degoogler-plan-sync') {
+                dgSavePlan(event.data.plan);
+                return;
+            }
             if (event.data && event.data.type === 'degoogler-request-sync') {
-                window.postMessage({ type: 'degoogler-sync', services: data }, '*');
+                dgLoadServices().then(services => window.postMessage({ type: 'degoogler-sync', services }, '*'));
+                const currentPlan = dgLoadPlan();
+                if (currentPlan) window.postMessage({ type: 'degoogler-plan-sync', plan: currentPlan }, '*');
             }
         });
     }

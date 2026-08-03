@@ -50,6 +50,8 @@ Or download the toolkit files from the repository/release bundle, keep `DeGoogle
 | Migration Plan Generator | Personalized 5-phase plan based on your selections |
 | Progress Tracking | Persistent checklist across sessions with per-phase completion |
 | Plan Export | Download full migration plan as Markdown |
+| Shared Plan Sync | Keeps the Web App and Browser Assistant migration checklist in the versioned `plan.json` shape |
+| Toolkit Deep Links | Open a selected PowerShell tool with a local path or plan file preselected via `degoogler://` |
 | Direct Links | One-click links to Google Takeout, signup pages, and import guides |
 
 ### PowerShell Toolkit — Data Processing
@@ -73,6 +75,16 @@ Or download the toolkit files from the repository/release bundle, keep `DeGoogle
 | Account Audit | myaccount.google.com | 8-step audit checklist: app permissions, security, devices, activity, ads, privacy, takeout, forwarding |
 | **Connected Services Auditor** | myaccount.google.com/permissions | **Scans OAuth-connected apps, lets you add email-registered services manually, tracks per-service migration steps (Set Password → Update Email → Revoke Google → Verified), categorizes by priority (Critical/Important/Optional), exports full audit as CSV** |
 | Gmail Migration | mail.google.com | Step-by-step forwarding setup, auto-reply configuration, contact update checklist |
+
+Connected-service audit state is encrypted with AES-GCM before it is stored in userscript storage. The generated key is kept separately in the same browser profile; this protects the stored payload from casual inspection but is not a substitute for a password-manager vault.
+
+To register the local toolkit protocol handler once, run:
+
+```powershell
+& .\DeGoogler-Toolkit.ps1 -RegisterProtocol
+```
+
+The Web App's tracker can then open `degoogler://toolkit?...` links, and exported `plan.json` files can be loaded by the toolkit with `-PlanPath`.
 
 ## How It Works
 

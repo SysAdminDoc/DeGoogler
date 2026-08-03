@@ -53,6 +53,13 @@ try {
     Assert-DgTest (Test-Path $xmp) 'XMP sidecar output missing'
     Assert-DgTest ((Get-Content -LiteralPath $xmp -Raw) -match 'DateTimeOriginal') 'XMP date metadata missing'
     Assert-DgTest ((Get-DgBurstKey -MediaPath $photo -Date $filenameDate) -ne $null) 'Burst key detection failed'
+
+    $planPath = Join-Path $root 'plan.json'
+    [IO.File]::WriteAllText($planPath, '{"schema":"https://example.test/plan.schema.json","version":"1.0.0","profile":"personal","generatedAt":"2026-08-03T00:00:00Z","actions":[{"id":"one","phase":"backup","title":"Export","required":true,"automated":false,"timeEstimate":"10 min","difficultyScore":2,"done":false}],"connectedServices":[]}')
+    $plan = Import-DgMigrationPlan -Path $planPath
+    $link = ConvertFrom-DgDeepLink -Uri 'degoogler://toolkit?tool=photos&path=C%3A%5CPhotos%20Folder&plan=C%3A%5Cplan.json'
+    Assert-DgTest ($plan.profile -eq 'personal' -and $plan.actions.Count -eq 1) 'Migration plan validation failed'
+    Assert-DgTest ($link.Tool -eq 'photos' -and $link.Path -eq 'C:\Photos Folder') 'Deep-link parsing failed'
     Write-Output 'PASS converter core smoke'
 } finally {
     if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }
