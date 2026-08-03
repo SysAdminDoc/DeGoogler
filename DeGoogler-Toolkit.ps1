@@ -22,7 +22,9 @@
 param(
     [string]$DeepLink,
     [string]$PlanPath,
-    [switch]$RegisterProtocol
+    [switch]$RegisterProtocol,
+    [switch]$CheckForUpdate,
+    [switch]$DownloadUpdate
 )
 
 $script:toolkitRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
@@ -32,6 +34,7 @@ if (-not (Test-Path -LiteralPath $script:corePath)) {
     exit 1
 }
 . $script:corePath
+$script:toolkitVersion = '0.0.7'
 
 function Register-DgProtocolHandler {
     if ([string]::IsNullOrWhiteSpace($PSCommandPath)) { throw 'Protocol registration requires running the toolkit from a .ps1 file.' }
@@ -47,6 +50,31 @@ if ($RegisterProtocol) {
     Register-DgProtocolHandler
     Write-Output 'Registered degoogler:// protocol handler for the current user.'
     exit 0
+}
+
+if ($CheckForUpdate -or $DownloadUpdate) {
+    try {
+        $update = Get-DgReleaseUpdate -CurrentVersion $script:toolkitVersion
+        if (-not $update.UpdateAvailable) {
+            Write-Output "DeGoogler Toolkit $($script:toolkitVersion) is current."
+            exit 0
+        }
+        if (-not $update.VerifiedBundleAvailable) {
+            Write-Error "DeGoogler $($update.LatestVersion) is available, but its release bundle/checksum assets are incomplete. No download was made."
+            exit 2
+        }
+        Write-Output "Verified update available: DeGoogler $($update.LatestVersion) ($($update.BundleAssetName))."
+        Write-Output "Release: $($update.ReleaseUrl)"
+        if ($DownloadUpdate) {
+            $destination = Join-Path $env:LOCALAPPDATA ("DeGoogler\updates\{0}" -f $update.BundleAssetName)
+            $downloaded = Save-DgVerifiedReleaseBundle -Update $update -DestinationPath $destination
+            Write-Output "Downloaded and SHA-256 verified: $($downloaded.Path)"
+        }
+        exit 0
+    } catch {
+        Write-Error "Update check failed: $($_.Exception.Message)"
+        exit 1
+    }
 }
 
 # ── Auto-elevate ──
@@ -356,7 +384,10 @@ $xaml = @'
                         <TextBlock Text="v0.0.2" FontSize="10" Foreground="#888"/>
                     </Border>
                 </StackPanel>
-                <TextBlock Grid.Column="2" Text="Your data stays on your machine" FontSize="11" Foreground="#666" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="2" HorizontalAlignment="Right">
+                    <TextBlock Text="Your data stays on your machine" FontSize="11" Foreground="#666" HorizontalAlignment="Right"/>
+                    <Button x:Name="btnCheckForUpdate" Content="Check for updates" FontSize="10" Padding="8,3" Margin="0,5,0,0" Background="#333" HorizontalAlignment="Right"/>
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -587,7 +618,7 @@ $controlNames = @(
     'txtBookmarksInput','btnBookmarksBrowse','btnBookmarksDetect','chkBookmarksDryRun','btnBookmarksRun',
     'txtContactsInput','btnContactsBrowse','chkContactsDedup','chkContactsClean','chkContactsDryRun','btnContactsRun',
     'cmbConvertersType','txtConvertersInput','btnConvertersBrowse','txtConvertersOutput','btnConvertersOutputBrowse','chkConvertersDryRun','btnConvertersRun',
-    'progressBar','lblProgress','txtLog'
+    'progressBar','lblProgress','txtLog','btnCheckForUpdate'
 )
 foreach ($name in $controlNames) {
     $controls[$name] = $window.FindName($name)
@@ -705,6 +736,37 @@ function Start-AsyncTask {
     })
     $timer.Start()
 }
+
+$controls['btnCheckForUpdate'].Add_Click({
+    $controls['btnCheckForUpdate'].IsEnabled = $false
+    Write-Log 'Checking GitHub Releases for a verified toolkit update...'
+    Start-AsyncTask -ScriptBlock {
+        param($currentVersion)
+        Get-DgReleaseUpdate -CurrentVersion $currentVersion
+    } -Arguments @($script:toolkitVersion) -OnComplete {
+        param($update, $errors)
+        $controls['btnCheckForUpdate'].IsEnabled = $true
+        if ($errors -and @($errors).Count -gt 0) { Write-Log "Update check failed: $($errors[0])" 'WARN'; return }
+        if (-not $update -or -not $update.UpdateAvailable) { Write-Log "Toolkit $script:toolkitVersion is up to date." 'OK'; return }
+        if (-not $update.VerifiedBundleAvailable) { Write-Log "DeGoogler $($update.LatestVersion) is available, but no verified release bundle was published." 'WARN'; return }
+        $answer = [System.Windows.MessageBox]::Show(
+            "DeGoogler $($update.LatestVersion) is available with a SHA-256 manifest. Download the verified release bundle now?",
+            'DeGoogler Toolkit Update',
+            [System.Windows.MessageBoxButton]::YesNo,
+            [System.Windows.MessageBoxImage]::Information)
+        if ($answer -ne [System.Windows.MessageBoxResult]::Yes) { Write-Log 'Update download cancelled.'; return }
+        $destination = Join-Path $env:LOCALAPPDATA ("DeGoogler\updates\{0}" -f $update.BundleAssetName)
+        Write-Log "Downloading $($update.BundleAssetName) and verifying SHA-256..."
+        Start-AsyncTask -ScriptBlock {
+            param($releaseUpdate, $targetPath)
+            Save-DgVerifiedReleaseBundle -Update $releaseUpdate -DestinationPath $targetPath
+        } -Arguments @($update, $destination) -OnComplete {
+            param($downloaded, $downloadErrors)
+            if ($downloadErrors -and @($downloadErrors).Count -gt 0) { Write-Log "Verified update download failed: $($downloadErrors[0])" 'ERROR'; return }
+            if ($downloaded) { Write-Log "Verified update saved to $($downloaded.Path). Extract it to install the new toolkit." 'OK' }
+        }
+    }
+})
 
 # ═══════════════════════════════════════════════════
 # TOOL 1: Takeout Archive Extractor

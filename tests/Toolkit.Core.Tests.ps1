@@ -60,6 +60,12 @@ try {
     $link = ConvertFrom-DgDeepLink -Uri 'degoogler://toolkit?tool=photos&path=C%3A%5CPhotos%20Folder&plan=C%3A%5Cplan.json'
     Assert-DgTest ($plan.profile -eq 'personal' -and $plan.actions.Count -eq 1) 'Migration plan validation failed'
     Assert-DgTest ($link.Tool -eq 'photos' -and $link.Path -eq 'C:\Photos Folder') 'Deep-link parsing failed'
+
+    $bundlePath = Join-Path $root 'DeGoogler-v9.9.9.zip'
+    [IO.File]::WriteAllBytes($bundlePath, [byte[]](1,2,3,4,5))
+    $bundleHash = (Get-FileHash -LiteralPath $bundlePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $verification = Test-DgReleaseBundleHash -Path $bundlePath -ManifestContent ("$bundleHash  DeGoogler-v9.9.9.zip`n") -AssetName 'DeGoogler-v9.9.9.zip'
+    Assert-DgTest $verification.Valid 'Release bundle checksum verification failed'
     Write-Output 'PASS converter core smoke'
 } finally {
     if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue }

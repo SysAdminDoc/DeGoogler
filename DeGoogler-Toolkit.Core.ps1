@@ -82,6 +82,89 @@ function ConvertFrom-DgDeepLink {
     return [pscustomobject]@{ Tool = $tool; Path = [string]$values['path']; Plan = [string]$values['plan'] }
 }
 
+function ConvertFrom-DgChecksumManifest {
+    param([Parameter(Mandatory=$true)][string]$Content)
+    $hashes = @{}
+    foreach ($line in ($Content -split "`r?`n")) {
+        if ($line -match '^\s*([0-9A-Fa-f]{64})\s+\*?(.+?)\s*$') {
+            $hashes[$Matches[2].Trim().Replace('\','/')] = $Matches[1].ToUpperInvariant()
+        }
+    }
+    return $hashes
+}
+
+function Test-DgReleaseBundleHash {
+    param(
+        [Parameter(Mandatory=$true)][string]$Path,
+        [Parameter(Mandatory=$true)][string]$ManifestContent,
+        [Parameter(Mandatory=$true)][string]$AssetName
+    )
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw "Release asset does not exist: $Path" }
+    $hashes = ConvertFrom-DgChecksumManifest -Content $ManifestContent
+    $normalized = $AssetName.Replace('\','/')
+    $expected = if ($hashes.ContainsKey($normalized)) { $hashes[$normalized] } else { $hashes[(Split-Path -Leaf $normalized)] }
+    if ([string]::IsNullOrWhiteSpace($expected)) { throw "Checksum manifest has no entry for release asset: $AssetName" }
+    $actual = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
+    return [pscustomobject]@{ Valid = ($actual -eq $expected.ToUpperInvariant()); Expected = $expected.ToUpperInvariant(); Actual = $actual; AssetName = $AssetName }
+}
+
+function Get-DgReleaseUpdate {
+    param(
+        [Parameter(Mandatory=$true)][string]$CurrentVersion,
+        [string]$Repository = 'SysAdminDoc/DeGoogler'
+    )
+    if ($CurrentVersion -notmatch '^\d+\.\d+\.\d+$') { throw "Current toolkit version must use semver: $CurrentVersion" }
+    $headers = @{ 'User-Agent' = 'DeGoogler-Toolkit'; Accept = 'application/vnd.github+json' }
+    $release = Invoke-RestMethod -Uri ("https://api.github.com/repos/{0}/releases/latest" -f $Repository) -Headers $headers -UseBasicParsing -ErrorAction Stop
+    $tag = [string]$release.tag_name
+    $latestVersion = $tag.TrimStart([char[]]'vV')
+    if ($latestVersion -notmatch '^\d+\.\d+\.\d+$') { throw "GitHub release tag is not semver: $tag" }
+    $bundleName = "DeGoogler-v$latestVersion.zip"
+    $bundle = @($release.assets | Where-Object { $_.name -eq $bundleName }) | Select-Object -First 1
+    $checksums = @($release.assets | Where-Object { $_.name -match 'SHA256SUMS' }) | Select-Object -First 1
+    $updateAvailable = ([version]$latestVersion -gt [version]$CurrentVersion)
+    $verifiedBundleAvailable = $null -ne $bundle -and $null -ne $checksums
+    [pscustomobject]@{
+        CurrentVersion = $CurrentVersion
+        LatestVersion = $latestVersion
+        UpdateAvailable = $updateAvailable
+        VerifiedBundleAvailable = $verifiedBundleAvailable
+        Status = if (-not $updateAvailable) { 'Current' } elseif ($verifiedBundleAvailable) { 'VerifiedBundleReady' } else { 'ReleaseAssetsIncomplete' }
+        ReleaseUrl = [string]$release.html_url
+        BundleAssetName = if ($bundle) { [string]$bundle.name } else { $bundleName }
+        BundleAssetUrl = if ($bundle) { [string]$bundle.browser_download_url } else { $null }
+        ChecksumAssetName = if ($checksums) { [string]$checksums.name } else { $null }
+        ChecksumAssetUrl = if ($checksums) { [string]$checksums.browser_download_url } else { $null }
+    }
+}
+
+function Save-DgVerifiedReleaseBundle {
+    param(
+        [Parameter(Mandatory=$true)]$Update,
+        [Parameter(Mandatory=$true)][string]$DestinationPath
+    )
+    if (-not $Update.UpdateAvailable) { throw 'No newer DeGoogler release is available.' }
+    if (-not $Update.VerifiedBundleAvailable) { throw 'The latest release does not provide a verifiable bundle and checksum asset.' }
+    $destination = [IO.Path]::GetFullPath($DestinationPath)
+    $parent = Split-Path -Parent $destination
+    if (-not (Test-Path -LiteralPath $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+    $suffix = [guid]::NewGuid().ToString('N')
+    $tempBundle = "$destination.$suffix.download"
+    $tempChecksums = "$destination.$suffix.sha256"
+    try {
+        Invoke-WebRequest -Uri $Update.BundleAssetUrl -OutFile $tempBundle -UseBasicParsing -ErrorAction Stop
+        Invoke-WebRequest -Uri $Update.ChecksumAssetUrl -OutFile $tempChecksums -UseBasicParsing -ErrorAction Stop
+        $verification = Test-DgReleaseBundleHash -Path $tempBundle -ManifestContent (Get-Content -LiteralPath $tempChecksums -Raw) -AssetName $Update.BundleAssetName
+        if (-not $verification.Valid) { throw "Release bundle hash mismatch. Expected $($verification.Expected), got $($verification.Actual)." }
+        Move-Item -LiteralPath $tempBundle -Destination $destination -Force
+        return [pscustomobject]@{ Path = $destination; Version = $Update.LatestVersion; Sha256 = $verification.Actual; Verified = $true }
+    } finally {
+        foreach ($temporary in @($tempBundle,$tempChecksums)) {
+            if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force -ErrorAction SilentlyContinue }
+        }
+    }
+}
+
 function Get-DgFirstProperty {
     param([AllowNull()]$Object, [Parameter(Mandatory=$true)][string[]]$Names)
     foreach ($name in $Names) {

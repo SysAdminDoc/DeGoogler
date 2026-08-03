@@ -49,6 +49,8 @@ pwsh -NoProfile -File .\build-release.ps1
 
 The command creates `dist\DeGoogler-v<version>.zip`, containing the Web App, userscript, two-file toolkit, bundled ExifTool runtime, documentation, and a generated `SHA256SUMS` manifest. The toolkit remains unsigned; the manifest provides release-artifact integrity checking.
 
+The toolkit's **Check for updates** button queries the public GitHub Releases API. It only offers a download when the release contains both the expected bundle and a SHA-256 manifest; the downloaded archive is verified before it is saved. The same flow is available without opening the WPF window with `-CheckForUpdate`, or with an explicit verified download using `-DownloadUpdate`.
+
 ## Features
 
 ### Web App — Migration Wizard

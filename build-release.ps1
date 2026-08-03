@@ -52,13 +52,13 @@ foreach ($relative in $sourceFiles) {
     $destination = Join-Path $stage $relative
     $destinationParent = Split-Path -Parent $destination
     New-Item -ItemType Directory -Path $destinationParent -Force | Out-Null
-    Copy-Item -LiteralPath $source -Destination $destination -Force
+    Copy-Item -LiteralPath $source -Destination $destination -Force | Out-Null
 }
 
 $toolsSource = Join-Path $root 'tools'
 if (-not (Test-Path -LiteralPath (Join-Path $toolsSource 'exiftool.exe') -PathType Leaf)) { throw 'Bundled ExifTool executable is missing.' }
 if (-not (Test-Path -LiteralPath (Join-Path $toolsSource 'exiftool_files') -PathType Container)) { throw 'Bundled ExifTool support directory is missing.' }
-Copy-Item -LiteralPath $toolsSource -Destination (Join-Path $stage 'tools') -Recurse -Force
+Copy-Item -LiteralPath $toolsSource -Destination (Join-Path $stage 'tools') -Recurse -Force | Out-Null
 
 $hashLines = Get-ChildItem -LiteralPath $stage -File -Recurse |
     Sort-Object FullName |
@@ -68,6 +68,9 @@ $hashLines = Get-ChildItem -LiteralPath $stage -File -Recurse |
         "$hash  $relative"
     }
 [IO.File]::WriteAllLines((Join-Path $stage 'SHA256SUMS'), $hashLines, [Text.Encoding]::ASCII)
+$checksumAssetPath = Join-Path $outputRoot "$releaseName-SHA256SUMS.txt"
+if (Test-Path -LiteralPath $checksumAssetPath) { Remove-Item -LiteralPath $checksumAssetPath -Force }
+Copy-Item -LiteralPath (Join-Path $stage 'SHA256SUMS') -Destination $checksumAssetPath -Force | Out-Null
 
 if (-not $SkipZip) {
     Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zipPath -CompressionLevel Optimal
@@ -77,6 +80,7 @@ $result = [ordered]@{
     Version = $Version
     StagingDirectory = $stage
     ZipPath = if ($SkipZip) { $null } else { $zipPath }
+    ChecksumPath = $checksumAssetPath
     FileCount = @(Get-ChildItem -LiteralPath $stage -File -Recurse).Count
 }
 if (-not $SkipZip) { $result.ZipSha256 = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToUpperInvariant() }
