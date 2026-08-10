@@ -31,3 +31,16 @@ All notable changes to DeGoogler will be documented in this file.
 - Added: Add files via upload
 - Added: Add files via upload
 - Added: Add files via upload
+
+## Roadmap archive — 2026-08-10 — ROADMAP.md
+
+<details>
+<summary>Original roadmap snapshot</summary>
+
+```markdown
+# DeGoogler Roadmap
+
+Three-part migration toolkit: React wizard, PowerShell WPF data processor, Tampermonkey browser assistant. Tracks work beyond v0.1.0.
+```
+
+</details>
