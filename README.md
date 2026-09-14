@@ -6,6 +6,16 @@
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1+-5391FE?logo=powershell&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/Userscript-Tampermonkey%2FViolentmonkey-orange)
 
+<p align="center">
+  <a href="https://ko-fi.com/X8K126YVER">
+    <img height="42" src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" alt="Buy me a coffee on Ko-fi" />
+  </a>
+</p>
+
+<p align="center">
+  <sub><em>If this project helps you, a coffee helps me keep working on it.</em></sub>
+</p>
+
 > A turnkey migration toolkit for leaving Google services behind. Interactive wizard, desktop data processor, and browser automation — everything a normal person needs to fully degoogle.
 
 https://sysadmindoc.github.io/DeGoogler/
