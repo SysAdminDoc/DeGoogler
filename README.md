@@ -1,6 +1,6 @@
 # DeGoogler
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Version](https://img.shields.io/badge/version-0.1.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1+-5391FE?logo=powershell&logoColor=white)
@@ -34,15 +34,7 @@ DeGoogler is a three-part toolkit that walks anyone through the process of migra
 Open `degoogler.jsx` as a React artifact or deploy to any static hosting.
 
 ### PowerShell Toolkit
-```powershell
-# Download the two-file toolkit and run (auto-elevates, auto-installs dependencies)
-$degooglerDir = Join-Path $env:LOCALAPPDATA 'DeGoogler'
-New-Item -ItemType Directory -Path $degooglerDir -Force | Out-Null
-Invoke-WebRequest https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-Toolkit.ps1 -OutFile (Join-Path $degooglerDir 'DeGoogler-Toolkit.ps1')
-Invoke-WebRequest https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-Toolkit.Core.ps1 -OutFile (Join-Path $degooglerDir 'DeGoogler-Toolkit.Core.ps1')
-& (Join-Path $degooglerDir 'DeGoogler-Toolkit.ps1')
-```
-Or download the toolkit files from the repository/release bundle, keep `DeGoogler-Toolkit.Core.ps1` beside `DeGoogler-Toolkit.ps1`, and right-click the main script → Run with PowerShell.
+Download the source as a zip from GitHub's [Download ZIP](https://github.com/SysAdminDoc/DeGoogler/archive/refs/heads/main.zip) link, which keeps `DeGoogler-Toolkit.ps1` and `DeGoogler-Toolkit.Core.ps1` together in the same folder. Extract it, then right-click `DeGoogler-Toolkit.ps1` and select Run with PowerShell (it auto-elevates and installs its own dependencies).
 
 ### Browser Assistant (Userscript)
 1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/)

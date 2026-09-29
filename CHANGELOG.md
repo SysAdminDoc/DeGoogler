@@ -2,6 +2,10 @@
 
 All notable changes to DeGoogler will be documented in this file.
 
+## [v0.1.1] - 2026-09-28
+
+- Docs: Replaced the pasted PowerShell fetch-and-run install block (README and the GitHub Pages wizard) with a Download ZIP link, since the toolkit script and its core module have to stay in the same folder. Removed the two single-file raw-download buttons in favor of the same zip.
+
 ## [v0.1.0] - 2026-08-03
 
 - Added: PowerShell Takeout converters for Keep Markdown, Fit Apple Health/TCX, Maps GeoJSON/GPX/KML, and Chat/Hangouts JSON exports.
