@@ -1,4 +1,4 @@
-const CACHE_NAME = 'degoogler-v0.1.1';
+const CACHE_NAME = 'degoogler-v0.1.2';
 const CORE_ASSETS = [
   './',
   './index.html',

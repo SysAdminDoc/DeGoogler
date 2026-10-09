@@ -1,6 +1,6 @@
 # DeGoogler
 
-![Version](https://img.shields.io/badge/version-0.1.1-blue)
+![Version](https://img.shields.io/badge/version-0.1.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1+-5391FE?logo=powershell&logoColor=white)
@@ -16,7 +16,7 @@
   <sub><em>If this project helps you, a coffee helps me keep working on it.</em></sub>
 </p>
 
-> A turnkey migration toolkit for leaving Google services behind. Interactive wizard, desktop data processor, and browser automation — everything a normal person needs to fully degoogle.
+> Leave Google at your own pace. Plan the move in your browser, process your exports locally, and track each account as you switch.
 
 https://sysadmindoc.github.io/DeGoogler/
 
@@ -24,14 +24,14 @@ https://sysadmindoc.github.io/DeGoogler/
 
 DeGoogler is a three-part toolkit that walks anyone through the process of migrating away from Google services:
 
-1. **DeGoogler Web App** (`degoogler.jsx`) — Interactive React wizard that guides you through service inventory, alternative selection, and generates a phased migration plan
-2. **DeGoogler Toolkit** (`DeGoogler-Toolkit.ps1` + `DeGoogler-Toolkit.Core.ps1`) — PowerShell WPF desktop app that handles the heavy data processing: extracting Takeout archives, fixing photo metadata, converting passwords, processing emails, and more
-3. **DeGoogler Browser Assistant** (`DeGoogler-BrowserAssistant.user.js`) — Tampermonkey userscript that adds automation overlays on Google Takeout, YouTube, Gmail, and Google Account pages
+1. **DeGoogler Web App** (`index.html`) guides you through the move and tracks your progress. A standalone React wizard is also included in `degoogler.jsx`.
+2. **DeGoogler Toolkit** (`DeGoogler-Toolkit.ps1` + `DeGoogler-Toolkit.Core.ps1`) is a PowerShell WPF desktop app that handles the heavy data processing: extracting Takeout archives, fixing photo metadata, converting passwords, processing emails, and more
+3. **DeGoogler Browser Assistant** (`DeGoogler-BrowserAssistant.user.js`) is a Tampermonkey userscript that adds automation overlays on Google Takeout, YouTube, Gmail, and Google Account pages
 
 ## Quick Start
 
 ### Web App (Migration Wizard)
-Open `degoogler.jsx` as a React artifact or deploy to any static hosting.
+Open the [migration wizard](https://sysadmindoc.github.io/DeGoogler/) or serve the repository as a static website.
 
 ### PowerShell Toolkit
 Download the source as a zip from GitHub's [Download ZIP](https://github.com/SysAdminDoc/DeGoogler/archive/refs/heads/main.zip) link, which keeps `DeGoogler-Toolkit.ps1` and `DeGoogler-Toolkit.Core.ps1` together in the same folder. Extract it, then right-click `DeGoogler-Toolkit.ps1` and select Run with PowerShell (it auto-elevates and installs its own dependencies).
@@ -39,11 +39,11 @@ Download the source as a zip from GitHub's [Download ZIP](https://github.com/Sys
 ### Browser Assistant (Userscript)
 1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/)
 2. [Click here to install](https://raw.githubusercontent.com/SysAdminDoc/DeGoogler/main/DeGoogler-BrowserAssistant.user.js)
-3. Visit any Google service page — the assistant panel appears automatically
+3. Visit a supported Google page. The assistant panel appears automatically.
 
 ### Release bundle and hosting
 
-GitHub Pages deploys the static Web App automatically on every push to `main` through `.github/workflows/pages.yml`. To build the distributable bundle locally:
+GitHub Pages serves the static Web App from the root of `main`. A push updates the site without a custom Actions workflow. To build the distributable bundle locally:
 
 ```powershell
 pwsh -NoProfile -File .\build-release.ps1
@@ -60,9 +60,18 @@ docker build -t degoogler:local .
 docker run --rm -p 8080:80 degoogler:local
 ```
 
+## Local checks
+
+```powershell
+node --test --test-concurrency=2 tests/*.test.mjs
+pwsh -NoProfile -File .\tests\Toolkit.Core.Tests.ps1
+```
+
+The web checks cover plan synchronization, including older Browser Assistant messages and local checklist changes.
+
 ## Features
 
-### Web App — Migration Wizard
+### Web App (Migration Wizard)
 
 | Feature | Description |
 |---------|-------------|
@@ -78,7 +87,7 @@ docker run --rm -p 8080:80 degoogler:local
 | Toolkit Deep Links | Open a selected PowerShell tool with a local path or plan file preselected via `degoogler://` |
 | Direct Links | One-click links to Google Takeout, signup pages, and import guides |
 
-### PowerShell Toolkit — Data Processing
+### PowerShell Toolkit (Data Processing)
 
 | Tool | Description |
 |------|-------------|
@@ -91,7 +100,7 @@ docker run --rm -p 8080:80 degoogler:local
 | Contacts Processor | Cleans Google Contacts VCF exports: deduplication, phone number standardization, encoding fixes |
 | Takeout Export Converters | Converts Keep notes to labeled Markdown, Fit data to Apple Health XML/TCX, saved places to GeoJSON/GPX/KML, and Chat/Hangouts MBOX to Matrix/Signal-shaped JSON |
 
-### Browser Assistant — Userscript
+### Browser Assistant (Userscript)
 
 | Module | Google Site | What It Does |
 |--------|-------------|--------------|
@@ -128,11 +137,11 @@ The Web App's tracker can then open `degoogler://toolkit?...` links, and exporte
 **Typical workflow:**
 1. Use the **Web App** to audit your Google usage and pick alternatives
 2. Install the **Browser Assistant** userscript
-3. Visit Google Takeout — the assistant helps you select and export everything
+3. Visit Google Takeout. The assistant helps you select and export everything.
 4. Download your Takeout archives
 5. Run the **PowerShell Toolkit** to extract, fix, and convert your data
 6. Import processed data into your new services
-7. Visit myaccount.google.com/permissions — the **Connected Services Auditor** scans your OAuth apps and guides you through migrating every linked account
+7. Visit myaccount.google.com/permissions. The **Connected Services Auditor** scans your OAuth apps and guides you through migrating every linked account.
 8. Work through the connected services checklist: set passwords, update emails, revoke Google access, verify each one
 9. Follow the migration plan checklist to complete the transition
 
@@ -163,7 +172,6 @@ The Web App's tracker can then open `degoogler://toolkit?...` links, and exporte
 - Windows 10/11
 - PowerShell 5.1+
 - Admin rights (auto-elevates)
-- ExifTool (auto-downloaded for Photos Metadata Fix)
 - `DeGoogler-Toolkit.Core.ps1` beside the main script (included in the repository/release bundle)
 - Bundled `tools\exiftool.exe` plus `tools\exiftool_files\` (ExifTool 13.59, used offline)
 
@@ -179,7 +187,7 @@ The Web App's tracker can then open `degoogler://toolkit?...` links, and exporte
 - All data processing happens locally on your machine
 - No data is sent to any external server
 - The web app stores progress in browser storage only
-- The userscript only runs on Google domains
+- The userscript runs on supported Google pages and the DeGoogler site for progress sync
 - Password converter includes optional secure-delete (cryptographic overwrite) of source CSV
 - No tracking, no analytics, no telemetry
 - Long-running archive, photo, and MBOX operations checkpoint completed units in `%LOCALAPPDATA%\DeGoogler\logs\*.progress.json` so interrupted runs can resume.
@@ -187,29 +195,29 @@ The Web App's tracker can then open `degoogler://toolkit?...` links, and exporte
 ## FAQ / Troubleshooting
 
 **Q: Google Takeout export is failing or incomplete.**
-A: Takeout exports for large accounts can take hours or days. Try reducing the archive size setting to 2GB and export in multiple batches. Use the Takeout Helper userscript to ensure all services are selected.
+A: Takeout exports for large accounts can take hours or days. Try reducing the archive size setting to 2GB and export in multiple batches. Use the Takeout Helper userscript to check that all services are selected.
 
 **Q: Photos Metadata Fix says ExifTool not found.**
-A: The toolkit auto-downloads ExifTool on first run. If that fails, manually download from [exiftool.org](https://exiftool.org) and place `exiftool.exe` in `%LOCALAPPDATA%\DeGoogler\`.
+A: Extract the whole download so `tools\exiftool.exe` and `tools\exiftool_files\` stay together beside the toolkit. The release includes ExifTool for offline use.
 
 **Q: Chrome passwords CSV is empty.**
 A: Chrome requires biometric/PIN verification before exporting. Go to `chrome://password-manager/settings` and click Export. The CSV is saved to your Downloads folder.
 
 **Q: YouTube subscription export found 0 channels.**
-A: YouTube's page structure changes frequently. As a fallback, use Google Takeout to export YouTube data — the `subscriptions.csv` file works with most import tools.
+A: YouTube's page structure changes frequently. As a fallback, use Google Takeout to export YouTube data. The `subscriptions.csv` file works with most import tools.
 
 **Q: Can I do this gradually?**
 A: Absolutely. The migration plan is designed to be completed over weeks or months. Run old and new services in parallel during the transition phase.
 
 **Q: How do I find all the services tied to my Google account?**
-A: Start with the OAuth scan at myaccount.google.com/permissions — the Browser Assistant automates this. But that only shows apps using "Sign in with Google." You also need to think through every service where your Gmail is the registered email: banking, insurance, government, medical, work HR, shopping, social media, hosting, utilities. The Connected Services Auditor has a quick-add list of 24 commonly-forgotten services to jog your memory.
+A: Start with the OAuth scan at myaccount.google.com/permissions. The Browser Assistant automates this. But that only shows apps using "Sign in with Google." You also need to think through every service where your Gmail is the registered email: banking, insurance, government, medical, work HR, shopping, social media, hosting, utilities. The Connected Services Auditor has a quick-add list of 24 commonly-forgotten services to jog your memory.
 
 **Q: What happens if I delete my Google account before migrating connected services?**
 A: You lose access to every service that relied on Google OAuth for login (unless you set a standalone password first) and every service that sends password resets or 2FA codes to your Gmail. This is the #1 mistake people make. The migration plan's Connected Services phase must be completed BEFORE account deletion.
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT License. See [LICENSE](LICENSE) for details.
 
 ## Contributing
 

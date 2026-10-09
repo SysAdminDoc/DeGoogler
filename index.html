@@ -191,7 +191,7 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 <body>
 <button class="mob-tog" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
 <aside class="sidebar">
-<div class="sb-brand"><div class="sb-ico">DG</div><div><div class="sb-nm">DeGoogler</div><div class="sb-ver">v0.1.0</div></div></div>
+<div class="sb-brand"><div class="sb-ico">DG</div><div><div class="sb-nm">DeGoogler</div><div class="sb-ver">v0.1.2</div></div></div>
 <div class="sb-prof"><select id="profSel" aria-label="Migration profile"></select><button id="profAdd" title="Add profile">+</button></div>
 <div class="sb-lang"><label for="langSel">Language</label><select id="langSel" aria-label="Language"><option value="en">EN</option><option value="es">ES</option><option value="de">DE</option><option value="fr">FR</option></select></div>
 <div class="sb-prog"><div class="pbar"><div class="pfill" id="gp"></div></div><div class="ptxt"><span id="gpct">0%</span><span id="gcnt">0/0</span></div></div>
@@ -205,11 +205,11 @@ a{color:var(--acc2);text-decoration:none}a:hover{text-decoration:underline}
 <div class="main"><div class="ct" id="ct"></div></div>
 <script>
 // ══════════════════════════════════════════════
-// DeGoogler v0.1.0 — Unified Migration Wizard
+// DeGoogler v0.1.2 — Unified Migration Wizard
 // ══════════════════════════════════════════════
 
 // ── Google Services Database (16 services, 51 alternatives) ──
-const APP_VERSION='0.1.0';
+const APP_VERSION='0.1.2';
 let SERVICES=[
 {id:"gmail",name:"Gmail",icon:"\u2709",cat:"Communication",diff:"Medium",alts:[
 {id:"protonmail",name:"Proton Mail",icon:"\uD83D\uDFE3",priv:5,cost:"Free / $4+/mo",ease:4,plat:"Web, iOS, Android, Desktop (Bridge)",desc:"Swiss-based, end-to-end encrypted email. Gold standard for privacy.",imp:"Settings \u2192 Import/Export \u2192 Import emails from MBOX file",url:"https://account.proton.me/signup"},
@@ -334,7 +334,7 @@ if(!profiles.some(p=>p.id===curProfile))curProfile=profiles[0].id;
 function pkey(k){return 'dg-'+curProfile+'-'+k}
 function loadJson(key,oldKey,fallback){try{const raw=localStorage.getItem(pkey(key))||(curProfile==='personal'?localStorage.getItem(oldKey):null);return raw?JSON.parse(raw):fallback}catch{return fallback}}
 let cur=0,checks=loadJson('chk','dg-chk',{}),catFil='All',platformFil='All';
-function saveCk(){localStorage.setItem(pkey('chk'),JSON.stringify(checks));recordProgressEvent();emitPlan()}
+function saveCk(sync=true){localStorage.setItem(pkey('chk'),JSON.stringify(checks));recordProgressEvent();if(sync)emitPlan()}
 function switchProfile(id){curProfile=id;localStorage.setItem(PROFILE_ACTIVE_KEY,id);checks=loadJson('chk','dg-chk',{});cur=0;render()}
 function addProfile(){const id='profile-'+Date.now();profiles.push({id:id,name:'Profile '+profiles.length});localStorage.setItem(PROFILE_LIST_KEY,JSON.stringify(profiles));switchProfile(id)}
 const I18N={
@@ -358,7 +358,7 @@ function renderProfiles(){
 
 // Tracker
 function ldT(){return loadJson('tracker-services','degoogler-tracker-services',[])}
-function svT(d){localStorage.setItem(pkey('tracker-services'),JSON.stringify(d));recordProgressEvent();emitPlan()}
+function svT(d,sync=true){localStorage.setItem(pkey('tracker-services'),JSON.stringify(d));recordProgressEvent();if(sync)emitPlan()}
 function tSt(t){return t==='oauth'?['password','email','disconnect','verified']:t==='access'?['review','disconnect','verified']:['email','verified']}
 function tLb(t){return t==='oauth'?{password:'PW',email:'EM',disconnect:'RV',verified:'OK'}:t==='access'?{review:'RV',disconnect:'DC',verified:'OK'}:{email:'EM',verified:'OK'}}
 let tFil='all';
@@ -675,7 +675,7 @@ function buildPlan(){
   });
   return {schema:'https://sysadmindoc.github.io/DeGoogler/plan.schema.json',version:APP_VERSION,profile:curProfile,generatedAt:new Date().toISOString(),actions,connectedServices:tracker};
 }
-function emitPlan(){try{window.postMessage({type:'degoogler-plan-sync',plan:buildPlan()},location.origin)}catch{}}
+function emitPlan(){try{window.postMessage({type:'degoogler-plan-sync',source:'degoogler-web',plan:buildPlan()},location.origin)}catch{}}
 
 function icsDate(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z')}
 function exportIcs(){
@@ -727,11 +727,12 @@ function cpy(t){navigator.clipboard.writeText(t).then(()=>{const e=document.crea
 // ── Userscript Sync Bridge ──
 window.addEventListener('message',e=>{
   if(e.source!==window)return;
+  if(e.data&&e.data.source==='degoogler-web')return;
   if(e.data&&e.data.type==='degoogler-sync'){const s=e.data.services;if(Array.isArray(s)&&s.length>0){svT(s);if(cur===6)render();else renderSB()}}
   if(e.data&&e.data.type==='degoogler-plan-sync'){
     const p=e.data.plan;
     if(p&&Array.isArray(p.actions)&&Array.isArray(p.connectedServices)){
-      p.actions.forEach(a=>{if(a&&a.id)checks[a.id]=!!a.done});saveCk();svT(p.connectedServices);if(cur===6)render();else renderSB();
+      p.actions.forEach(a=>{if(a&&a.id)checks[a.id]=!!a.done});saveCk(false);svT(p.connectedServices,false);if(cur===6)render();else renderSB();
     }
   }
 });

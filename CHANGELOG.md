@@ -2,6 +2,12 @@
 
 All notable changes to DeGoogler will be documented in this file.
 
+## [v0.1.2] 2026-10-09
+
+- Fixed a plan-sync loop that could freeze the migration wizard as soon as it loaded. Browser Assistant imports and local checklist updates still sync.
+- Added behavioral regression checks for plan messages and aligned the wizard version with the toolkit and offline cache.
+- Corrected the hosting and offline ExifTool instructions. Removed the unused Pages workflow because the site deploys from `main`.
+
 ## [v0.1.1] - 2026-09-28
 
 - Docs: Replaced the pasted PowerShell fetch-and-run install block (README and the GitHub Pages wizard) with a Download ZIP link, since the toolkit script and its core module have to stay in the same folder. Removed the two single-file raw-download buttons in favor of the same zip.
