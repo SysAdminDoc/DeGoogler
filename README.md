@@ -153,7 +153,7 @@ The Web App's tracker can then open `degoogler://toolkit?...` links, and exporte
 | Google Drive | Proton Drive, Nextcloud, Tresorit, Filen |
 | Google Search | DuckDuckGo, Brave Search, Startpage, Kagi |
 | Chrome | Firefox, Brave, LibreWolf, Vivaldi |
-| Google Calendar | Proton Calendar, Tuta Calendar, EteSync |
+| Google Calendar | Proton Calendar, Tuta Calendar, EteSync, SilentSuite |
 | Google Photos | Immich, Ente Photos, PhotoPrism |
 | Google Maps | OsmAnd, Organic Maps, Magic Earth |
 | YouTube | NewPipe, FreeTube, Invidious, Odysee |

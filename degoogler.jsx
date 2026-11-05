@@ -105,6 +105,7 @@ const GOOGLE_SERVICES = [
       { id: "protoncalendar", name: "Proton Calendar", icon: "🟣", privacy: 5, cost: "Free with Proton", ease: 4, platforms: "Web, iOS, Android", desc: "E2E encrypted calendar. Seamlessly integrates with Proton Mail.", importGuide: "Settings → Import → Upload .ics file from Google Takeout", signupUrl: "https://account.proton.me/signup" },
       { id: "tutacalendar", name: "Tuta Calendar", icon: "🟢", privacy: 5, cost: "Free with Tuta", ease: 4, platforms: "Web, iOS, Android, Desktop", desc: "Encrypted calendar built into Tuta. Zero-knowledge encryption.", importGuide: "Import .ics calendar file through calendar settings", signupUrl: "https://app.tuta.com/signup" },
       { id: "etesync", name: "EteSync", icon: "🔵", privacy: 5, cost: "$2/mo", ease: 3, platforms: "Web, iOS, Android, Desktop (DAV)", desc: "Secure, E2E encrypted calendar/contacts sync. Works with standard CalDAV apps.", importGuide: "Import .ics files via web client or CalDAV-compatible app", signupUrl: "https://www.etesync.com" },
+      { id: "silentsuite", name: "SilentSuite", icon: "🔐", privacy: 5, cost: "Free self-hosting; paid managed hosting", ease: 3, platforms: "Web, Android, Desktop (bridge)", desc: "Open-source, E2E encrypted sync for calendars, contacts and tasks. Currently in beta.", importGuide: "Import .ics calendar files; see https://docs.silentsuite.io/user-guide/calendar", signupUrl: "https://silentsuite.io" },
     ],
   },
   {

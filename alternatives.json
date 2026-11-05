@@ -272,6 +272,18 @@
           "desc": "Secure E2E encrypted calendar/contacts sync. Works with standard CalDAV apps.",
           "imp": "Import .ics files via web client or CalDAV-compatible app",
           "url": "https://www.etesync.com"
+        },
+        {
+          "id": "silentsuite",
+          "name": "SilentSuite",
+          "icon": "🔐",
+          "priv": 5,
+          "cost": "Free self-hosting; paid managed hosting",
+          "ease": 3,
+          "plat": "Web, Android, Desktop (bridge)",
+          "desc": "Open-source, E2E encrypted sync for calendars, contacts and tasks. Currently in beta.",
+          "imp": "Import .ics calendar files; see https://docs.silentsuite.io/user-guide/calendar",
+          "url": "https://silentsuite.io"
         }
       ]
     },
